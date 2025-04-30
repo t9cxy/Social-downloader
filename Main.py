@@ -3,9 +3,10 @@ import requests
 from colorama import Fore, Style, init
 import time
 
+# Initialize colorama
 init(autoreset=True)
 
-# Colors
+# Colors for output
 RED = Fore.RED
 GREEN = Fore.GREEN
 CYAN = Fore.CYAN
@@ -14,6 +15,8 @@ MAGENTA = Fore.MAGENTA
 BLUE = Fore.BLUE
 RESET = Style.RESET_ALL
 BOLD = Style.BRIGHT
+
+DOWNLOAD_DIR = "/sdcard/download"  # Directory to save files
 
 def clear():
     os.system('clear')
@@ -32,10 +35,11 @@ def download_file(url, filename):
     try:
         r = requests.get(url, stream=True)
         r.raise_for_status()
-        with open(filename, 'wb') as f:
+        file_path = os.path.join(DOWNLOAD_DIR, filename)
+        with open(file_path, 'wb') as f:
             for chunk in r.iter_content(chunk_size=8192):
                 f.write(chunk)
-        print(f"{GREEN}[✓]{RESET} Saved as: {filename}")
+        print(f"{GREEN}[✓]{RESET} Saved as: {file_path}")
     except Exception as e:
         print(f"{RED}[×]{RESET} Error: {e}")
 
