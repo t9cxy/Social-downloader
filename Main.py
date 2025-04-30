@@ -1,7 +1,7 @@
+#!/usr/bin/env python3
 import os
 import re
 import sys
-import platform
 import subprocess
 import requests
 import yt_dlp
@@ -11,10 +11,10 @@ from tqdm import tqdm
 # ─── Utilities ─────────────────────────────────────────────────────────────────
 
 def clear():
-    os.system('cls' if os.name == 'nt' else 'clear')
+    os.system("cls" if os.name == "nt" else "clear")
 
 def banner():
-    print(f"""
+    print(r"""
  █████╗ ██╗      ██████╗  ██████╗ ███╗   ██╗███████╗
 ██╔══██╗██║     ██╔═══██╗██╔═══██╗████╗  ██║██╔════╝
 ███████║██║     ██║   ██║██║   ██║██╔██╗ ██║█████╗  
@@ -25,7 +25,7 @@ def banner():
 """)
 
 def pause():
-    input("\n[•] Press Enter to return...")
+    input("\n[•] Press Enter to continue...")
 
 def ensure_package(pkg, imp=None):
     try:
@@ -49,212 +49,211 @@ def prompt_filename(default):
 def save_with_progress(url, fname):
     try:
         r = requests.get(url, stream=True)
-        total = int(r.headers.get('content-length', 0))
-        with open(fname, 'wb') as f, tqdm(desc=fname, total=total, unit='B', unit_scale=True) as bar:
+        total = int(r.headers.get("content-length", 0))
+        with open(fname, "wb") as f, tqdm(desc=fname, total=total, unit="B", unit_scale=True) as bar:
             for chunk in r.iter_content(1024):
-                f.write(chunk); bar.update(len(chunk))
+                if not chunk: break
+                f.write(chunk)
+                bar.update(len(chunk))
         return True
     except Exception as e:
         print(f"[!] Download error: {e}")
         return False
 
 def move_file(fname):
-    dst = '/sdcard/download'
+    dst = "/sdcard/download"
     os.makedirs(dst, exist_ok=True)
     os.system(f"mv '{fname}' {dst}/")
     print(f"[✓] Moved to {dst}/{fname}")
 
-# ─── TikTok ────────────────────────────────────────────────────────────────────
-
-def tiktok_profile_pic():
-    clear(); banner()
-    url = input("[?] TikTok profile URL: ").strip()
-    api = f"https://tikwm.com/api/?url={url}"
-    try:
-        data = requests.get(api).json()['data']
-        pic = data['author']['avatarThumb']
-        name = prompt_filename("tiktok_pp")
-        fname = f"{name}.jpg"
-        if save_with_progress(pic, fname): move_file(fname)
-    except Exception as e:
-        print(f"[!] {e}")
-    pause()
-
-def tiktok_post():
-    clear(); banner()
-    url = input("[?] TikTok post URL: ").strip()
-    api = f"https://tikwm.com/api/?url={url}"
-    try:
-        d = requests.get(api).json()['data']
-        desc = sanitize_filename(d.get('title') or "tiktok_post")
-        # detect type
-        if d.get('images'):
-            print("[•] Photo post detected")
-            print("[1] Download photos\n[2] Download sound\n[0] Back")
-            ch = input("[?] Choose: ").strip()
-            if ch=='1':
-                for i,img in enumerate(d['images'],1):
-                    name = prompt_filename(f"{desc}_{i}")
-                    fn=f"{name}.jpg"
-                    if save_with_progress(img, fn): move_file(fn)
-            elif ch=='2':
-                name=prompt_filename(desc+"_sound"); fn=f"{name}.mp4"
-                if save_with_progress(d['music'], fn): move_file(fn)
-        else:
-            print("[•] Video post detected")
-            print("[1] Download video\n[2] Download sound\n[0] Back")
-            ch = input("[?] Choose: ").strip()
-            if ch=='1':
-                name=prompt_filename(desc); fn=f"{name}.mp4"
-                if save_with_progress(d['play'], fn): move_file(fn)
-            elif ch=='2':
-                name=prompt_filename(desc+"_sound"); fn=f"{name}.mp4"
-                if save_with_progress(d['music'], fn): move_file(fn)
-    except Exception as e:
-        print(f"[!] {e}")
-    pause()
-
-def tiktok_copy_name():
-    clear(); banner()
-    username = input("[?] TikTok username: ").strip()
-    if username:
-        os.system(f"termux-clipboard-set '{username}'")
-        print(f"[✓] '{username}' copied to clipboard")
-    else:
-        print("[!] No username entered")
-    pause()
+# ─── TikTok Menu ───────────────────────────────────────────────────────────────
 
 def tiktok_menu():
     while True:
         clear(); banner()
-        print("[TikTok Menu]\n1.Profile Pic  2.Post Downloader  3.Copy Name  0.Back")
-        ch = input("[?] Choose: ").strip()
-        if ch=='1': tiktok_profile_pic()
-        elif ch=='2': tiktok_post()
-        elif ch=='3': tiktok_copy_name()
-        elif ch=='0': break
+        print("TikTok Options:\n")
+        print(" 1. Download Profile Picture")
+        print(" 2. Download Post Video")
+        print(" 3. Download Post Photo(s)")
+        print(" 4. Download Post Sound")
+        print(" 0. Back to Main Menu\n")
+        choice = input("[?] Choose: ").strip()
+        if choice == "0":
+            break
+        url = input("\n[?] Enter TikTok URL: ").strip()
+        api = f"https://tikwm.com/api/?url={url}"
+        try:
+            d = requests.get(api).json().get("data", {})
+        except:
+            print("[!] Failed to fetch TikTok data."); pause(); continue
 
-# ─── Instagram ─────────────────────────────────────────────────────────────────
+        # Profile Picture
+        if choice == "1":
+            pic = d.get("author", {}).get("avatarThumb")
+            name = prompt_filename("tiktok_pp"); fn=f"{name}.jpg"
+            if save_with_progress(pic, fn): move_file(fn)
 
-def instagram_profile_pic():
-    clear(); banner()
-    url = input("[?] Instagram profile URL: ").strip()
-    try:
-        res = requests.get(url).text
-        img = re.search(r'"profile_pic_url_hd":"([^"]+)"', res)[1].replace('\\u0026','&')
-        name = prompt_filename("insta_pp"); fn=f"{name}.jpg"
-        if save_with_progress(img, fn): move_file(fn)
-    except Exception as e: print(f"[!] {e}")
-    pause()
+        # Post Video
+        elif choice == "2":
+            link = d.get("play")
+            name = prompt_filename("tiktok_video"); fn=f"{name}.mp4"
+            if save_with_progress(link, fn): move_file(fn)
 
-def instagram_post():
-    clear(); banner()
-    url = input("[?] Instagram post URL: ").strip()
-    api = "https://instasupersave.com/api/convert"
-    data = urlencode({'q':url})
-    try:
-        res = requests.post(api, data=data, headers={'Content-Type':'application/x-www-form-urlencoded'}).json()
-        vids = re.findall(r'https.*?\.mp4', str(res))
-        imgs = re.findall(r'https.*?\.(?:jpg|png)', str(res))
-        print(f"[•] {len(vids)} videos, {len(imgs)} images found")
-        if vids:
-            name=prompt_filename("insta_video"); fn=f"{name}.mp4"
-            if save_with_progress(vids[0], fn): move_file(fn)
-        elif imgs:
-            name=prompt_filename("insta_img"); fn=f"{name}.jpg"
-            if save_with_progress(imgs[0], fn): move_file(fn)
-    except Exception as e: print(f"[!] {e}")
-    pause()
+        # Post Photos
+        elif choice == "3":
+            imgs = d.get("images", [])
+            for i, img in enumerate(imgs, 1):
+                name = prompt_filename(f"tiktok_img_{i}"); fn=f"{name}.jpg"
+                if save_with_progress(img, fn): move_file(fn)
 
-def instagram_copy_name():
-    clear(); banner()
-    username = input("[?] Instagram username: ").strip()
-    if username:
-        os.system(f"termux-clipboard-set '{username}'")
-        print(f"[✓] '{username}' copied")
-    else: print("[!] No username")
-    pause()
+        # Post Sound
+        elif choice == "4":
+            link = d.get("music")
+            name = prompt_filename("tiktok_sound"); fn=f"{name}.mp4"
+            if save_with_progress(link, fn): move_file(fn)
+
+        else:
+            print("[!] Invalid choice.")
+        pause()
+
+# ─── Instagram Menu ───────────────────────────────────────────────────────────
 
 def instagram_menu():
     while True:
         clear(); banner()
-        print("[Instagram Menu]\n1.Profile Pic  2.Post Downloader  3.Copy Name  0.Back")
-        ch = input("[?] Choose: ").strip()
-        if ch=='1': instagram_profile_pic()
-        elif ch=='2': instagram_post()
-        elif ch=='3': instagram_copy_name()
-        elif ch=='0': break
+        print("Instagram Options:\n")
+        print(" 1. Download Profile Picture")
+        print(" 2. Download Post Video/Photo")
+        print(" 3. Download Post Sound")
+        print(" 0. Back to Main Menu\n")
+        choice = input("[?] Choose: ").strip()
+        if choice == "0":
+            break
+        url = input("\n[?] Enter Instagram URL: ").strip()
+        if choice == "1":
+            try:
+                html = requests.get(url).text
+                m = re.search(r'"profile_pic_url_hd":"([^"]+)"', html)[1]
+                link = m.replace("\\u0026","&")
+            except:
+                print("[!] Failed to fetch profile pic."); pause(); continue
+            name = prompt_filename("insta_pp"); fn=f"{name}.jpg"
+            if save_with_progress(link, fn): move_file(fn)
 
-# ─── YouTube ────────────────────────────────────────────────────────────────────
+        elif choice in ("2","3"):
+            api = "https://instasupersave.com/api/convert"
+            data = urlencode({"q":url})
+            try:
+                res = requests.post(api, data=data, headers={'Content-Type':'application/x-www-form-urlencoded'}).json()
+                vids = re.findall(r'https.*?\.mp4', str(res))
+                imgs = re.findall(r'https.*?(?:jpg|png)', str(res))
+            except:
+                print("[!] Failed to fetch post."); pause(); continue
 
-def youtube_profile_pic():
-    clear(); banner()
-    channel = input("[?] YouTube channel ID/URL: ").strip()
-    try:
-        info = yt_dlp.YoutubeDL({'quiet':True, 'extract_flat':True}).extract_info(channel, download=False)
-        thumb = info.get('thumbnail')
-        name=prompt_filename("yt_pp"); fn=f"{name}.jpg"
-        if save_with_progress(thumb, fn): move_file(fn)
-    except Exception as e: print(f"[!] {e}")
-    pause()
+            # Video / Photo choice
+            if choice == "2":
+                if vids:
+                    link = vids[0]; ext = ".mp4"
+                elif imgs:
+                    link = imgs[0]; ext = ".jpg"
+                else:
+                    print("[!] No media found."); pause(); continue
+            # Sound only
+            else:
+                music = re.findall(r'https.*?\.mp4', str(res))  # Instasupersave returns mp4 sound?
+                link = music[0] if music else None
+                ext = ".mp4"
+                if not link:
+                    print("[!] No sound found."); pause(); continue
 
-def youtube_video():
-    clear(); banner()
-    url = input("[?] YouTube video URL: ").strip()
-    name = prompt_filename("yt_video"); fn_pattern = f"{name}.%(ext)s"
-    try:
-        with yt_dlp.YoutubeDL({'outtmpl':fn_pattern, 'format':'best'}) as ydl:
-            ydl.download([url])
-        move_file(next(f for f in os.listdir('.') if f.startswith(name)))
-    except Exception as e: print(f"[!] {e}")
-    pause()
+            name = prompt_filename("insta_media"); fn=f"{name}{ext}"
+            if save_with_progress(link, fn): move_file(fn)
 
-def youtube_audio():
-    clear(); banner()
-    url = input("[?] YouTube video URL: ").strip()
-    name = prompt_filename("yt_audio"); fn_pattern = f"{name}.%(ext)s"
-    try:
-        opts={'outtmpl':fn_pattern,'format':'bestaudio/best','postprocessors':[{'key':'FFmpegExtractAudio','preferredcodec':'mp3'}]}
-        with yt_dlp.YoutubeDL(opts) as ydl:
-            ydl.download([url])
-        move_file(f"{name}.mp3")
-    except Exception as e: print(f"[!] {e}")
-    pause()
+        else:
+            print("[!] Invalid choice.")
+        pause()
 
-def youtube_copy_name():
-    clear(); banner()
-    url = input("[?] YouTube channel ID/URL: ").strip()
-    try:
-        info = yt_dlp.YoutubeDL({'quiet':True, 'extract_flat':True}).extract_info(url, download=False)
-        name=info.get('uploader')
-        os.system(f"termux-clipboard-set '{name}'")
-        print(f"[✓] Channel '{name}' copied")
-    except Exception as e: print(f"[!] {e}")
-    pause()
+# ─── YouTube Menu ─────────────────────────────────────────────────────────────
 
 def youtube_menu():
+    ensure_package("yt-dlp","yt_dlp")
+    import yt_dlp
     while True:
         clear(); banner()
-        print("[YouTube Menu]\n1.Profile Pic  2.Download Video  3.Download Audio  4.Copy Name  0.Back")
-        ch = input("[?] Choose: ").strip()
-        if ch=='1': youtube_profile_pic()
-        elif ch=='2': youtube_video()
-        elif ch=='3': youtube_audio()
-        elif ch=='4': youtube_copy_name()
-        elif ch=='0': break
+        print("YouTube Options:\n")
+        print(" 1. Download Profile Picture (channel thumbnail)")
+        print(" 2. Download Video")
+        print(" 3. Download Audio (mp3)")
+        print(" 4. Download Thumbnail")
+        print(" 0. Back to Main Menu\n")
+        choice = input("[?] Choose: ").strip()
+        if choice == "0":
+            break
+        url = input("\n[?] Enter YouTube URL/ID: ").strip()
 
-# ─── Main ──────────────────────────────────────────────────────────────────────
+        # grab info
+        try:
+            ydl_opts = {'quiet':True,'extract_flat':True}
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(url, download=False)
+        except Exception as e:
+            print(f"[!] Failed: {e}"); pause(); continue
+
+        # Profile pic (channel thumbnail)
+        if choice == "1":
+            link = info.get("thumbnail"); ext=".jpg"
+        # Video
+        elif choice == "2":
+            name = prompt_filename("yt_video")
+            opts={'outtmpl':f'{name}.%(ext)s','format':'bestvideo+bestaudio'}
+            try:
+                with yt_dlp.YoutubeDL(opts) as ydl:
+                    ydl.download([url])
+                move_file(f"{name}.{info.get('ext','mp4')}")
+            except Exception as e:
+                print(f"[!] {e}")
+            pause(); continue
+        # Audio
+        elif choice == "3":
+            name = prompt_filename("yt_audio")
+            opts={'outtmpl':f'{name}.%(ext)s','format':'bestaudio','postprocessors':[{'key':'FFmpegExtractAudio','preferredcodec':'mp3'}]}
+            try:
+                with yt_dlp.YoutubeDL(opts) as ydl:
+                    ydl.download([url])
+                move_file(f"{name}.mp3")
+            except Exception as e:
+                print(f"[!] {e}")
+            pause(); continue
+        # Thumbnail
+        elif choice == "4":
+            link = info.get("thumbnail"); ext=".jpg"
+        else:
+            print("[!] Invalid choice.")
+            pause(); continue
+
+        # for choices 1 & 4
+        name = prompt_filename("yt_media"); fn=f"{name}{ext}"
+        if save_with_progress(link, fn): move_file(fn)
+        pause()
+
+# ─── Main Menu ─────────────────────────────────────────────────────────────────
 
 def main():
     while True:
         clear(); banner()
-        print("[1] TikTok\n[2] Instagram\n[3] YouTube\n[0] Exit")
+        print("[1] TikTok\n[2] Instagram\n[3] YouTube\n[0] Exit\n")
         ch = input("[?] Choose: ").strip()
-        if ch=='1': tiktok_menu()
-        elif ch=='2': instagram_menu()
-        elif ch=='3': youtube_menu()
-        elif ch=='0':
+        if ch == "1":
+            tiktok_menu()
+        elif ch == "2":
+            instagram_menu()
+        elif ch == "3":
+            youtube_menu()
+        elif ch == "0":
             print("Bye."); break
+        else:
+            print("[!] Invalid choice.")
+            pause()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
