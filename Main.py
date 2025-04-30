@@ -1,121 +1,104 @@
 import os
-import subprocess
 import sys
+import requests
+import platform
+import subprocess
 
-# Function to install missing packages
-def install_package(package):
+# Function to clear the terminal screen
+def clear():
+    os.system('cls' if os.name == 'nt' else 'clear')
+
+# Check and install yt_dlp if not present
+def ensure_yt_dlp_installed():
     try:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", package])
-    except subprocess.CalledProcessError:
-        print(f"[!] Failed to install {package}")
-        sys.exit(1)
+        import yt_dlp
+    except ImportError:
+        print("[!] yt_dlp not found. Installing now...")
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "yt-dlp"])
+        print("[+] yt_dlp installed successfully.")
 
-# Ensure required packages are installed
-try:
-    from TikTokApi import TikTokApi
-except ImportError:
-    print("[!] Installing TikTokApi...")
-    install_package("TikTokApi")
-    from TikTokApi import TikTokApi
+# Display user info (no API used)
+def show_user_info():
+    print("\n[•] User Information")
+    print(f"[•] OS        : {platform.system()} {platform.release()}")
+    print(f"[•] Platform  : {platform.platform()}")
+    print(f"[•] Python    : {platform.python_version()}")
+    print(f"[•] Terminal  : {os.environ.get('TERM', 'Unknown')}\n")
 
-try:
-    import instaloader
-except ImportError:
-    print("[!] Installing instaloader...")
-    install_package("instaloader")
-    import instaloader
+# YouTube downloader
+def youtube_downloader():
+    ensure_yt_dlp_installed()
+    import yt_dlp
 
-try:
-    import yt_dlp as youtube_dl
-except ImportError:
-    print("[!] Installing yt-dlp...")
-    install_package("yt-dlp")
-    import yt_dlp as youtube_dl
+    clear()
+    print("=== YouTube Downloader ===")
+    url = input("Enter YouTube video URL: ").strip()
 
-# TikTok handler
-def tiktok_menu():
-    os.system("clear")
-    print("[•] TikTok Scraper\n")
-    username = input("[?] Enter TikTok username: ")
+    if not url:
+        print("[!] No URL provided.")
+        return
+
     try:
-        api = TikTokApi.get_instance()
-        user = api.user(username=username)
-        user_info = user.info()
-        print(f"[•] Username: {user_info['user']['uniqueId']}")
-        print(f"[•] Nickname: {user_info['user']['nickname']}")
-        print(f"[•] Followers: {user_info['stats']['followerCount']}")
-        print(f"[•] Videos: {user_info['stats']['videoCount']}")
-    except Exception as e:
-        print(f"[!] Error: {e}")
-    input("\n[?] Press Enter to return...")
-
-# Instagram handler
-def instagram_menu():
-    os.system("clear")
-    print("[•] Instagram Scraper\n")
-    username = input("[?] Enter Instagram username: ")
-    try:
-        loader = instaloader.Instaloader()
-        profile = instaloader.Profile.from_username(loader.context, username)
-        print(f"[•] Username: {profile.username}")
-        print(f"[•] Full Name: {profile.full_name}")
-        print(f"[•] Bio: {profile.biography}")
-        print(f"[•] Followers: {profile.followers}")
-        print(f"[•] Following: {profile.followees}")
-    except Exception as e:
-        print(f"[!] Error: {e}")
-    input("\n[?] Press Enter to return...")
-
-# YouTube handler
-def youtube_menu():
-    os.system("clear")
-    print("[•] YouTube Scraper\n")
-    url = input("[?] Enter YouTube video URL: ")
-    try:
+        print("[•] Downloading...")
         ydl_opts = {
-            'quiet': True,
-            'no_warnings': True,
+            'outtmpl': '%(title)s.%(ext)s',
+            'format': 'bestvideo+bestaudio/best'
         }
-        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=False)
-            print(f"[•] Title: {info.get('title')}")
-            print(f"[•] Uploader: {info.get('uploader')}")
-            print(f"[•] Views: {info.get('view_count')}")
-            print(f"[•] Duration: {info.get('duration')}s")
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
+        print("[✓] Download completed.")
     except Exception as e:
-        print(f"[!] Error: {e}")
-    input("\n[?] Press Enter to return...")
+        print(f"[!] Error downloading video: {e}")
+
+# Function to fetch and execute the code from GitHub
+def fetch_and_run_code(url):
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        exec(response.text)
+    except requests.RequestException as e:
+        print(f"[!] Error fetching script: {e}")
+    except Exception as e:
+        print(f"[!] Error executing the script: {e}")
 
 # Main menu
 def main_menu():
     while True:
-        os.system("clear")
-        print("""
- █████╗ ██╗      ██████╗  ██████╗ ███╗   ██╗███████╗  
-██╔══██╗██║     ██╔═══██╗██╔═══██╗████╗  ██║██╔════╝  
-███████║██║     ██║   ██║██║   ██║██╔██╗ ██║█████╗    
-██╔══██║██║     ██║   ██║██║   ██║██║╚██╗██║██╔══╝    
-██║  ██║███████╗╚██████╔╝╚██████╔╝██║ ╚████║███████╗  
-╚═╝  ╚═╝╚══════╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═══╝╚══════╝  
-         Developer: Alone | Telegram: @i4mAlone
-""")
-        print("[1] TikTok")
-        print("[2] Instagram")
-        print("[3] YouTube")
-        print("[0] Exit\n")
-        choice = input("[?] Choose: ")
-        if choice == "1":
-            tiktok_menu()
-        elif choice == "2":
-            instagram_menu()
-        elif choice == "3":
-            youtube_menu()
-        elif choice == "0":
-            print("[•] Exiting...")
+        clear()
+        print("█████╗ ██╗      ██████╗  ██████╗ ███╗   ██╗███████╗")
+        print("██╔══██╗██║     ██╔═══██╗██╔═══██╗████╗  ██║██╔════╝")
+        print("███████║██║     ██║   ██║██║   ██║██╔██╗ ██║█████╗")
+        print("██╔══██║██║     ██║   ██║██║   ██║██║╚██╗██║██╔══╝")
+        print("██║  ██║███████╗╚██████╔╝╚██████╔╝██║ ╚████║███████╗")
+        print("╚═╝  ╚═╝╚══════╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═══╝╚══════╝")
+        print("     Developer: Alone | Telegram: @i4mAlone\n")
+        
+        show_user_info()
+
+        print("[1] TikTok Downloader")
+        print("[2] Instagram Downloader")
+        print("[3] YouTube Downloader")
+        print("[4] Exit")
+
+        choice = input("\n[?] Choose: ").strip()
+
+        if choice == '1':
+            print("[!] TikTok feature under update.")
+        elif choice == '2':
+            print("[!] Instagram feature under update.")
+        elif choice == '3':
+            youtube_downloader()
+            input("\n[•] Press Enter to return to menu.")
+        elif choice == '4':
+            print("Exiting...")
             break
         else:
-            print("[!] Invalid choice")
-            input("[?] Press Enter to try again...")
+            print("[!] Invalid option.")
+            input("[•] Press Enter to try again.")
 
-if __name__ == "__main__":
-    main_menu()
+# Run the fetch code from GitHub if needed
+# github_raw_url = "https://raw.githubusercontent.com/t9cxy/Social-downloader/refs/heads/main/Main.py"
+# fetch_and_run_code(github_raw_url)
+
+# Start the menu
+main_menu()
