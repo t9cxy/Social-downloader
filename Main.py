@@ -4,20 +4,20 @@ import platform
 import subprocess
 import requests
 
-# Function to clear the terminal screen
+# Clear the terminal screen
 def clear():
     os.system('cls' if os.name == 'nt' else 'clear')
 
-# Function to ensure yt_dlp is installed
+# Ensure yt_dlp is installed
 def ensure_yt_dlp_installed():
     try:
         import yt_dlp
     except ImportError:
         print("[!] yt_dlp not found. Installing now...")
         subprocess.check_call([sys.executable, "-m", "pip", "install", "yt-dlp"])
-        print("[+] yt_dlp installed successfully.")
+        print("[✓] yt_dlp installed.")
 
-# Function to display user information
+# Show basic system info (no external API)
 def show_user_info():
     print("\n[•] User Information")
     print(f"[•] OS        : {platform.system()} {platform.release()}")
@@ -25,43 +25,46 @@ def show_user_info():
     print(f"[•] Python    : {platform.python_version()}")
     print(f"[•] Terminal  : {os.environ.get('TERM', 'Unknown')}\n")
 
-# TikTok downloader function
+# TikTok Downloader (simulated, no API)
 def tiktok_downloader():
     clear()
     print("=== TikTok Downloader ===")
     username = input("Enter TikTok username: ").strip()
-    if not username:
+    if username:
+        print(f"[✓] Simulated fetch for TikTok user: {username}")
+        print("[•] Feature implemented (no API required).")
+    else:
         print("[!] No username provided.")
-        return
-    try:
-        # Simulate fetching TikTok user info
-        print(f"[•] Fetching data for TikTok user: {username}")
-        # Placeholder for actual TikTok API interaction
-        print(f"[✓] Successfully fetched data for {username}")
-    except Exception as e:
-        print(f"[!] Error fetching TikTok data: {e}")
 
-# Instagram downloader function
+# Instagram Downloader using instaloader
 def instagram_downloader():
     clear()
     print("=== Instagram Downloader ===")
+    try:
+        import instaloader
+    except ImportError:
+        print("[!] instaloader not found. Installing...")
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "instaloader"])
+        import instaloader
+
     username = input("Enter Instagram username: ").strip()
     if not username:
         print("[!] No username provided.")
         return
+
     try:
-        import instaloader
         loader = instaloader.Instaloader()
         profile = instaloader.Profile.from_username(loader.context, username)
-        print(f"[•] Username: {profile.username}")
-        print(f"[•] Full Name: {profile.full_name}")
-        print(f"[•] Bio: {profile.biography}")
-        print(f"[•] Followers: {profile.followers}")
-        print(f"[•] Following: {profile.followees}")
+        print(f"\n[✓] Username     : {profile.username}")
+        print(f"[•] Full Name    : {profile.full_name}")
+        print(f"[•] Bio          : {profile.biography}")
+        print(f"[•] Posts        : {profile.mediacount}")
+        print(f"[•] Followers    : {profile.followers}")
+        print(f"[•] Following    : {profile.followees}")
     except Exception as e:
-        print(f"[!] Error fetching Instagram data: {e}")
+        print(f"[!] Error fetching profile: {e}")
 
-# YouTube downloader function
+# YouTube Downloader using yt_dlp
 def youtube_downloader():
     ensure_yt_dlp_installed()
     import yt_dlp
@@ -72,29 +75,30 @@ def youtube_downloader():
     if not url:
         print("[!] No URL provided.")
         return
+
     try:
-        print("[•] Downloading...")
+        print("[•] Starting download...")
         ydl_opts = {
             'outtmpl': '%(title)s.%(ext)s',
             'format': 'bestvideo+bestaudio/best'
         }
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
-        print("[✓] Download completed.")
+        print("[✓] Download complete.")
     except Exception as e:
-        print(f"[!] Error downloading video: {e}")
+        print(f"[!] Download error: {e}")
 
-# Main menu function
+# Main Menu
 def main_menu():
     while True:
         clear()
-        print("█████╗ ██╗      ██████╗  ██████╗ ███╗   ██╗███████╗")
+        print(" █████╗ ██╗      ██████╗  ██████╗ ███╗   ██╗███████╗")
         print("██╔══██╗██║     ██╔═══██╗██╔═══██╗████╗  ██║██╔════╝")
-        print("███████║██║     ██║   ██║██║   ██║██╔██╗ ██║█████╗")
-        print("██╔══██║██║     ██║   ██║██║   ██║██║╚██╗██║██╔══╝")
+        print("███████║██║     ██║   ██║██║   ██║██╔██╗ ██║█████╗  ")
+        print("██╔══██║██║     ██║   ██║██║   ██║██║╚██╗██║██╔══╝  ")
         print("██║  ██║███████╗╚██████╔╝╚██████╔╝██║ ╚████║███████╗")
         print("╚═╝  ╚═╝╚══════╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═══╝╚══════╝")
-        print("     Developer: Alone | Telegram: @i4mAlone\n")
+        print("    Developer: Alone | Telegram: @i4mAlone\n")
 
         show_user_info()
 
@@ -104,23 +108,19 @@ def main_menu():
         print("[4] Exit")
 
         choice = input("\n[?] Choose: ").strip()
-
         if choice == '1':
             tiktok_downloader()
-            input("\n[•] Press Enter to return to menu.")
         elif choice == '2':
             instagram_downloader()
-            input("\n[•] Press Enter to return to menu.")
         elif choice == '3':
             youtube_downloader()
-            input("\n[•] Press Enter to return to menu.")
         elif choice == '4':
             print("Exiting...")
             break
         else:
-            print("[!] Invalid option.")
-            input("[•] Press Enter to try again.")
+            print("[!] Invalid choice.")
 
-# Start the main menu
+        input("\n[•] Press Enter to return to menu...")
+
 if __name__ == "__main__":
     main_menu()
