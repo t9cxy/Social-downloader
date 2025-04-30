@@ -1,179 +1,99 @@
-# main.py
-
 import os
 import time
-import requests
-from colorama import Fore, Style, init
+import random
+from colorama import Fore, init
 
 init(autoreset=True)
 
-RED = Fore.RED
-GREEN = Fore.GREEN
-CYAN = Fore.CYAN
-YELLOW = Fore.YELLOW
-MAGENTA = Fore.MAGENTA
-BLUE = Fore.BLUE
-RESET = Style.RESET_ALL
-BOLD = Style.BRIGHT
+def clear():
+    os.system("clear" if os.name == "posix" else "cls")
 
-def clear(): os.system('clear')
+def fast_print(text, delay=0.001):
+    for char in text:
+        print(char, end='', flush=True)
+        time.sleep(delay)
+    print()
 
-def logo():
-    print(f"""{CYAN}{BOLD}
-     █████  ██       ██████  ███    ██ ███████ 
-    ██   ██ ██      ██    ██ ████   ██ ██      
-    ███████ ██      ██    ██ ██ ██  ██ █████   
-    ██   ██ ██      ██    ██ ██  ██ ██ ██      
-    ██   ██ ███████  ██████  ██   ████ ███████ 
-    {RESET}""")
+def banner():
+    print(Fore.GREEN + """
+██╗  ██╗ █████╗ ██╗      ██████╗ ███╗   ███╗███████╗
+██║ ██╔╝██╔══██╗██║     ██╔═══██╗████╗ ████║██╔════╝
+█████╔╝ ███████║██║     ██║   ██║██╔████╔██║█████╗  
+██╔═██╗ ██╔══██║██║     ██║   ██║██║╚██╔╝██║██╔══╝  
+██║  ██╗██║  ██║███████╗╚██████╔╝██║ ╚═╝ ██║███████╗
+╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝
+""" + Fore.LIGHTBLACK_EX + "            [ Underground Attack Suite v1.0 ]\n")
 
+options = [
+    "TikTok Server Overload",
+    "Instagram Bruteforce",
+    "Facebook ID Scraper",
+    "Telegram DDoS",
+    "Snapchat Packet Flood",
+    "WhatsApp Session Hijack",
+    "Gmail Login Cracker",
+    "IP Logger Deployment",
+    "Deep Web Scan",
+    "Botnet Expansion",
+    "UDP Packet Storm",
+    "SYN Flood Protocol",
+    "Port Scanner",
+    "MAC Spoofer",
+    "DNS Poison Injector",
+    "Anonymous Proxy Rotator",
+    "Firewall Bypass",
+    "API Key Sniffer",
+    "Reverse Shell Spawner",
+    "Zero Day Hunter"
+]
 
-def main_menu():
-    clear()
-    logo()
-    print(f"\n{MAGENTA}[ {YELLOW}MAIN MENU {MAGENTA}]{RESET}\n")
-    print(f"{CYAN}[01]{RESET} TikTok Tools")
-    print(f"{CYAN}[02]{RESET} Instagram Tools")
-    print(f"{CYAN}[03]{RESET} Snapchat Tools")
-    print(f"{CYAN}[04]{RESET} Facebook Tools")
-    print(f"{CYAN}[05]{RESET} Exit\n")
+def menu():
+    for i, opt in enumerate(options, start=1):
+        print(Fore.CYAN + f"[{i:02}] {opt}")
+    print(Fore.RED + "[00] Exit\n")
 
-    choice = input(f"{YELLOW}[{RED}•{YELLOW}] Select an option: {RESET}")
-    if choice == "1" or choice.lower() == "tiktok":
-        tiktok_menu()
-    elif choice == "2" or choice.lower() == "instagram":
-        instagram_menu()
-    elif choice == "3" or choice.lower() == "snapchat":
-        snapchat_menu()
-    elif choice == "4" or choice.lower() == "facebook":
-        facebook_menu()
-    elif choice == "5":
-        print(f"\n{GREEN}[✓]{RESET} Exiting...")
-        time.sleep(1)
-        exit()
-    else:
-        print(f"\n{RED}[×]{RESET} Invalid option!")
-        time.sleep(1)
-        main_menu()
+def fake_ip():
+    return f"{random.randint(11, 250)}.{random.randint(0, 255)}.{random.randint(0, 255)}.{random.randint(1, 254)}"
 
-# Helper function for fake downloads
-def fake_download(title):
-    print(f"\n{GREEN}[✓]{RESET} {title} feature selected.")
-    link = input(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Enter the post/sound link: ")
-    print(f"{YELLOW}[{MAGENTA}•{YELLOW}]{RESET} Processing: {link}")
-    time.sleep(1.5)
-    print(f"{GREEN}[✓]{RESET} Done!\n")
-    input(f"{CYAN}Press Enter to return to the menu...{RESET}")
-    main_menu()
+def launch_attack(opt_name):
+    print(Fore.RED + f"\n[!] Executing: {opt_name}")
+    time.sleep(1)
+    print(Fore.YELLOW + "[*] Initiating attack environment...")
+    time.sleep(1)
 
-# TikTok tools
-def tiktok_menu():
-    clear()
-    logo()
-    print(f"\n{MAGENTA}[ {BLUE}TIKTOK TOOLS {MAGENTA}]{RESET}\n")
-    print(f"{CYAN}[01]{RESET} Download Profile Picture")
-    print(f"{CYAN}[02]{RESET} Download Video")
-    print(f"{CYAN}[03]{RESET} Download Photo")
-    print(f"{CYAN}[04]{RESET} Download Sound")
-    print(f"{CYAN}[05]{RESET} Back\n")
+    targets = [fake_ip() for _ in range(10)]
+    methods = ['UDP-FLOOD', 'XMAS', 'HTTP-GET', 'ICMP-OVERLOAD', 'SYN-BOMB']
 
-    opt = input(f"{YELLOW}[{RED}•{YELLOW}] Select an option: {RESET}")
-    if opt == "1":
-        fake_download("TikTok Profile Picture")
-    elif opt == "2":
-        fake_download("TikTok Video")
-    elif opt == "3":
-        fake_download("TikTok Photo")
-    elif opt == "4":
-        fake_download("TikTok Sound")
-    elif opt == "5":
-        main_menu()
-    else:
-        print(f"{RED}[×]{RESET} Invalid option!")
-        time.sleep(1)
-        tiktok_menu()
+    for i in range(300):
+        ip = random.choice(targets)
+        method = random.choice(methods)
+        port = random.randint(20, 9000)
+        pkt = random.randint(100, 10000)
+        log = f"[+] {method} | {pkt} packets => {ip}:{port}"
+        print(Fore.GREEN + log)
+        time.sleep(0.005)
 
-# Instagram tools
-def instagram_menu():
-    clear()
-    logo()
-    print(f"\n{MAGENTA}[ {BLUE}INSTAGRAM TOOLS {MAGENTA}]{RESET}\n")
-    print(f"{CYAN}[01]{RESET} Download Profile Picture")
-    print(f"{CYAN}[02]{RESET} Download Video")
-    print(f"{CYAN}[03]{RESET} Download Photo")
-    print(f"{CYAN}[04]{RESET} Download Sound")
-    print(f"{CYAN}[05]{RESET} Back\n")
+    print(Fore.CYAN + "\n[✓] Operation complete.\n")
+    input(Fore.LIGHTBLACK_EX + "[ Press Enter to return to menu... ]")
 
-    opt = input(f"{YELLOW}[{RED}•{YELLOW}] Select an option: {RESET}")
-    if opt == "1":
-        fake_download("Instagram Profile Picture")
-    elif opt == "2":
-        fake_download("Instagram Video")
-    elif opt == "3":
-        fake_download("Instagram Photo")
-    elif opt == "4":
-        fake_download("Instagram Sound")
-    elif opt == "5":
-        main_menu()
-    else:
-        print(f"{RED}[×]{RESET} Invalid option!")
-        time.sleep(1)
-        instagram_menu()
+def main():
+    while True:
+        clear()
+        banner()
+        menu()
+        try:
+            choice = input(Fore.LIGHTGREEN_EX + "\n[>] Select option: ")
+            if choice == "00":
+                print(Fore.LIGHTRED_EX + "\n[!] Exiting...")
+                break
+            elif choice.isdigit() and 1 <= int(choice) <= 20:
+                launch_attack(options[int(choice) - 1])
+            else:
+                print(Fore.RED + "[!] Invalid option.")
+                time.sleep(1.5)
+        except:
+            print(Fore.RED + "[!] Unexpected error.")
+            time.sleep(1.5)
 
-# Snapchat tools
-def snapchat_menu():
-    clear()
-    logo()
-    print(f"\n{MAGENTA}[ {BLUE}SNAPCHAT TOOLS {MAGENTA}]{RESET}\n")
-    print(f"{CYAN}[01]{RESET} Download Profile Picture")
-    print(f"{CYAN}[02]{RESET} Download Video")
-    print(f"{CYAN}[03]{RESET} Download Photo")
-    print(f"{CYAN}[04]{RESET} Download Sound")
-    print(f"{CYAN}[05]{RESET} Back\n")
-
-    opt = input(f"{YELLOW}[{RED}•{YELLOW}] Select an option: {RESET}")
-    if opt == "1":
-        fake_download("Snapchat Profile Picture")
-    elif opt == "2":
-        fake_download("Snapchat Video")
-    elif opt == "3":
-        fake_download("Snapchat Photo")
-    elif opt == "4":
-        fake_download("Snapchat Sound")
-    elif opt == "5":
-        main_menu()
-    else:
-        print(f"{RED}[×]{RESET} Invalid option!")
-        time.sleep(1)
-        snapchat_menu()
-
-# Facebook tools
-def facebook_menu():
-    clear()
-    logo()
-    print(f"\n{MAGENTA}[ {BLUE}FACEBOOK TOOLS {MAGENTA}]{RESET}\n")
-    print(f"{CYAN}[01]{RESET} Download Profile Picture")
-    print(f"{CYAN}[02]{RESET} Download Video")
-    print(f"{CYAN}[03]{RESET} Download Photo")
-    print(f"{CYAN}[04]{RESET} Download Sound")
-    print(f"{CYAN}[05]{RESET} Back\n")
-
-    opt = input(f"{YELLOW}[{RED}•{YELLOW}] Select an option: {RESET}")
-    if opt == "1":
-        fake_download("Facebook Profile Picture")
-    elif opt == "2":
-        fake_download("Facebook Video")
-    elif opt == "3":
-        fake_download("Facebook Photo")
-    elif opt == "4":
-        fake_download("Facebook Sound")
-    elif opt == "5":
-        main_menu()
-    else:
-        print(f"{RED}[×]{RESET} Invalid option!")
-        time.sleep(1)
-        facebook_menu()
-
-# Start
 if __name__ == "__main__":
-    main_menu()
+    main()
