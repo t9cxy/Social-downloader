@@ -1,123 +1,137 @@
 import os
-import re
-import requests
-import yt_dlp
-from bs4 import BeautifulSoup
-from tqdm import tqdm
-from urllib.parse import urlencode
+import subprocess
+import sys
 
-# Color codes for terminal output
-R = '\033[91m'; G = '\033[92m'; Y = '\033[93m'; C = '\033[96m'; W = '\033[97m'; B = '\033[94m'; RESET = '\033[0m'
+# Function to install a package using pip if not already installed
+def install_package(package):
+    try:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+        print(f"[ • ] Successfully installed {package}.")
+    except subprocess.CalledProcessError:
+        print(f"[ ! ] Failed to install {package}. Please install it manually.")
+        sys.exit(1)
 
-def clear():
-    os.system('cls' if os.name == 'nt' else 'clear')
+# Try importing the necessary packages, install if not found
+try:
+    from TikTokApi import TikTokApi
+except ImportError:
+    print("[ ! ] TikTokApi is not installed. Installing now...")
+    install_package('TikTokApi')
+    from TikTokApi import TikTokApi  # Re-import after installation
 
-def banner():
-    print(f"""{R}
+try:
+    import instaloader
+except ImportError:
+    print("[ ! ] Instaloader is not installed. Installing now...")
+    install_package('instaloader')
+    import instaloader  # Re-import after installation
+
+try:
+    import yt_dlp as youtube_dl
+except ImportError:
+    print("[ ! ] yt-dlp is not installed. Installing now...")
+    install_package('yt-dlp')
+    import yt_dlp as youtube_dl  # Re-import after installation
+
+# Initialize TikTok API
+def search_tiktok(username):
+    os.system("clear")
+    print(f"[ • ] Searching TikTok for user: {username}\n")
+    api = TikTokApi.get_instance()
+    try:
+        user = api.get_user(username)
+        print(f"[ • ] Found TikTok user: {username}")
+        print(f"[ • ] User details: {user['user']['nickname']}")
+    except Exception as e:
+        print(f"[ ! ] Error: {str(e)}")
+    input("[ ? ] Press Enter to return to main menu...")
+
+# Initialize Instagram scraping with Instaloader
+def search_instagram(username):
+    os.system("clear")
+    print(f"[ • ] Searching Instagram for user: {username}\n")
+    loader = instaloader.Instaloader()
+    try:
+        profile = instaloader.Profile.from_username(loader.context, username)
+        print(f"[ • ] Found Instagram user: {profile.username}")
+        print(f"[ • ] User bio: {profile.biography}")
+        print(f"[ • ] Followers: {profile.followers}")
+    except Exception as e:
+        print(f"[ ! ] Error: {str(e)}")
+    input("[ ? ] Press Enter to return to main menu...")
+
+# Initialize YouTube scraping with yt-dlp
+def search_youtube(video_url):
+    os.system("clear")
+    print(f"[ • ] Fetching YouTube details for video: {video_url}\n")
+    try:
+        ydl_opts = {
+            'quiet': True,
+            'extract_flat': True,
+        }
+        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(video_url, download=False)
+            print(f"[ • ] Found YouTube video: {info['title']}")
+            print(f"[ • ] Duration: {info['duration']} seconds")
+            print(f"[ • ] Views: {info['view_count']}")
+    except Exception as e:
+        print(f"[ ! ] Error: {str(e)}")
+    input("[ ? ] Press Enter to return to main menu...")
+
+# TikTok function
+def tiktok_menu():
+    os.system("clear")
+    print("[ • ] TikTok functionality is active.\n")
+    username = input("[?] Enter TikTok username to search: ")
+    search_tiktok(username)
+
+# Instagram function
+def instagram_menu():
+    os.system("clear")
+    print("[ • ] Instagram functionality is active.\n")
+    username = input("[?] Enter Instagram username to search: ")
+    search_instagram(username)
+
+# YouTube function
+def youtube_menu():
+    os.system("clear")
+    print("[ • ] YouTube functionality is active.\n")
+    video_url = input("[?] Enter YouTube video URL to fetch details: ")
+    search_youtube(video_url)
+
+# Main menu loop
+def main_menu():
+    while True:
+        os.system("clear")
+        print("""
  █████╗ ██╗      ██████╗  ██████╗ ███╗   ██╗███████╗
 ██╔══██╗██║     ██╔═══██╗██╔═══██╗████╗  ██║██╔════╝
 ███████║██║     ██║   ██║██║   ██║██╔██╗ ██║█████╗  
 ██╔══██║██║     ██║   ██║██║   ██║██║╚██╗██║██╔══╝  
 ██║  ██║███████╗╚██████╔╝╚██████╔╝██║ ╚████║███████╗
 ╚═╝  ╚═╝╚══════╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═══╝╚══════╝
-         {W}Developer: {C}Alone{W} | Telegram: {C}@i4mAlone{RESET}
+       Developer: Alone | Telegram: @i4mAlone
 """)
+        print("[1] TikTok")
+        print("[2] Instagram")
+        print("[3] YouTube")
+        print("[0] Exit\n")
 
-def sanitize_filename(name):
-    name = re.sub(r'[\\/*?:"<>|]', "", name)
-    return name.strip().capitalize()[:50]
+        choice = input("[?] Choose: ").strip()
 
-def prompt_filename(default_name):
-    custom = input(f"{C}[?]{W} Enter file name (or press Enter for default: {default_name}): ")
-    final = sanitize_filename(custom) if custom else sanitize_filename(default_name)
-    os.system(f"termux-clipboard-set '{final}'")
-    print(f"{G}[✓]{W} Name copied to clipboard: {final}")
-    return final
-
-def save_with_progress(url, filename):
-    try:
-        r = requests.get(url, stream=True)
-        total = int(r.headers.get('content-length', 0))
-        with open(filename, 'wb') as f, tqdm(
-            desc=filename, total=total, unit='B', unit_scale=True, unit_divisor=1024
-        ) as bar:
-            for chunk in r.iter_content(chunk_size=1024):
-                if chunk:
-                    f.write(chunk)
-                    bar.update(len(chunk))
-    except Exception as e:
-        print(f"{R}[x]{W} Download failed: {e}")
-        return False
-    return True
-
-def move_file(filename):
-    try:
-        os.makedirs('/sdcard/download', exist_ok=True)
-        os.system(f"mv '{filename}' /sdcard/download/")
-        print(f"{G}[✓]{W} Moved to /sdcard/download/{filename}")
-    except Exception as e:
-        print(f"{R}[x]{W} Move error: {e}")
-
-#
-# TikTok Helpers
-#
-def get_tiktok_user_info(username):
-    url = f'https://www.tiktok.com/@{username}'
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-    }
-    try:
-        res = requests.get(url, headers=headers)
-        res.raise_for_status()
-        soup = BeautifulSoup(res.text, 'html.parser')
-        try:
-            info = {
-                'Username': username,
-                'Bio': soup.find('meta', {'name': 'description'})['content'],
-                'Followers': soup.find('strong', {'title': 'Followers'}).text.strip(),
-                'Following': soup.find('strong', {'title': 'Following'}).text.strip(),
-                'Likes': soup.find('strong', {'title': 'Likes'}).text.strip(),
-                'Posts': soup.find('span', {'class': 'video-count'}).text.strip(),
-                'Profile Picture': soup.find('meta', {'property': 'og:image'})['content']
-            }
-            return info
-        except Exception as e:
-            print(f"{R}[x]{W} Error while extracting TikTok info: {e}")
-            return None
-    except requests.exceptions.RequestException as e:
-        print(f"{R}[x]{W} Failed to fetch TikTok user info: {e}")
-        return None
-
-def tiktok_profile_picture():
-    username = input(f"{C}[?]{W} TikTok username: ")
-    info = get_tiktok_user_info(username)
-    if info:
-        url = info['Profile Picture']
-        name = prompt_filename(username + "_pp")
-        fname = f"{name}.jpg"
-        if save_with_progress(url, fname):
-            move_file(fname)
-    else:
-        print(f"{R}[x]{W} Could not fetch info.")
-
-# Add the same for Instagram and YouTube helpers
-
-def main():
-    while True:
-        clear(); banner()
-        print(f"{Y}[1]{W} TikTok")
-        print(f"{Y}[2]{W} Instagram")
-        print(f"{Y}[3]{W} YouTube")
-        print(f"{Y}[0]{W} Exit")
-        ch = input(f"\n{B}[?]{W} Choose: ")
-        if ch=='1': tiktok_menu()
-        elif ch=='2': instagram_menu()
-        elif ch=='3': youtube_menu()
-        elif ch=='0':
-            print(f"{G}[✓]{W} Bye."); break
+        if choice == "1":
+            tiktok_menu()
+        elif choice == "2":
+            instagram_menu()
+        elif choice == "3":
+            youtube_menu()
+        elif choice == "0":
+            print("[ • ] Exiting...")
+            break
         else:
-            print(f"{R}[x]{W} Invalid choice.")
-        input(f"\n{C}[↩]{W} Enter to continue...")
+            print("[!] Invalid choice. Please try again.")
+            input("[?] Press Enter to continue...")
 
-if __name__ == '__main__':
-    main()
+# Run the main menu
+if __name__ == "__main__":
+    main_menu()
