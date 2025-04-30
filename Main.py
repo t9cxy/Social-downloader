@@ -43,13 +43,17 @@ def download_file(url, filename):
     except Exception as e:
         print(f"{RED}[×]{RESET} Error: {e}")
 
+def get_display_name(url):
+    # Simulate fetching the display name from the URL (replace with actual scraping logic or API call)
+    display_name = "Sample Display Name"  # Replace with actual display name fetching logic
+    return display_name
+
 def get_filename_from_caption_or_display_name(url, default_name="video"):
-    # Here, you can extract video caption or display name from the URL.
-    # For this example, I’ll use a placeholder since the real implementation will depend on API integration or scraping the data.
-    video_caption = "Sample Video Caption"  # This is a placeholder
-    display_name = "Sample_Display_Name"   # This is a placeholder
-    
-    # If you want to use the display name or caption (fallback)
+    # Simulate fetching caption from the URL (replace with actual caption fetching logic)
+    video_caption = "Sample Caption from Video"  # Replace with actual caption fetching logic
+    display_name = get_display_name(url)  # Get the display name
+
+    # Use caption as filename if available, otherwise use the display name
     filename = video_caption if video_caption else display_name
 
     print(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Use this default filename: {filename}? (y/n): ", end="")
