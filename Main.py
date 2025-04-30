@@ -15,7 +15,8 @@ BLUE = Fore.BLUE
 RESET = Style.RESET_ALL
 BOLD = Style.BRIGHT
 
-def clear(): os.system('clear')
+def clear():
+    os.system('clear')
 
 def logo():
     print(f"""{CYAN}{BOLD}
@@ -37,6 +38,23 @@ def download_file(url, filename):
         print(f"{GREEN}[✓]{RESET} Saved as: {filename}")
     except Exception as e:
         print(f"{RED}[×]{RESET} Error: {e}")
+
+def get_filename_from_caption_or_display_name(url, default_name="video"):
+    # Here, you can extract video caption or display name from the URL.
+    # For this example, I’ll use a placeholder since the real implementation will depend on API integration or scraping the data.
+    video_caption = "Sample Video Caption"  # This is a placeholder
+    display_name = "Sample_Display_Name"   # This is a placeholder
+    
+    # If you want to use the display name or caption (fallback)
+    filename = video_caption if video_caption else display_name
+
+    print(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Use this default filename: {filename}? (y/n): ", end="")
+    user_input = input().strip().lower()
+
+    if user_input == 'n':
+        filename = input(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Enter a custom filename (without extension): ")
+    
+    return f"{filename}.mp4"  # Adjust the extension based on the file type (video, photo, etc.)
 
 def main_menu():
     clear()
@@ -75,16 +93,20 @@ def tiktok_menu():
     opt = input(f"{YELLOW}[{RED}•{YELLOW}] Select an option: {RESET}")
     if opt == "1":
         url = input(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Enter profile pic URL: ")
-        download_file(url, "tiktok_profile.jpg")
+        filename = get_filename_from_caption_or_display_name(url, "tiktok_profile")
+        download_file(url, filename)
     elif opt == "2":
         url = input(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Enter video URL: ")
-        download_file(url, "tiktok_video.mp4")
+        filename = get_filename_from_caption_or_display_name(url, "tiktok_video")
+        download_file(url, filename)
     elif opt == "3":
         url = input(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Enter photo URL: ")
-        download_file(url, "tiktok_photo.jpg")
+        filename = get_filename_from_caption_or_display_name(url, "tiktok_photo")
+        download_file(url, filename)
     elif opt == "4":
         url = input(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Enter sound URL: ")
-        download_file(url, "tiktok_sound.mp3")
+        filename = get_filename_from_caption_or_display_name(url, "tiktok_sound")
+        download_file(url, filename)
     elif opt == "5":
         main_menu()
     else:
@@ -103,16 +125,20 @@ def instagram_menu():
     opt = input(f"{YELLOW}[{RED}•{YELLOW}] Select an option: {RESET}")
     if opt == "1":
         url = input(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Enter profile pic URL: ")
-        download_file(url, "insta_profile.jpg")
+        filename = get_filename_from_caption_or_display_name(url, "insta_profile")
+        download_file(url, filename)
     elif opt == "2":
         url = input(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Enter video URL: ")
-        download_file(url, "insta_video.mp4")
+        filename = get_filename_from_caption_or_display_name(url, "insta_video")
+        download_file(url, filename)
     elif opt == "3":
         url = input(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Enter photo URL: ")
-        download_file(url, "insta_photo.jpg")
+        filename = get_filename_from_caption_or_display_name(url, "insta_photo")
+        download_file(url, filename)
     elif opt == "4":
         url = input(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Enter sound URL: ")
-        download_file(url, "insta_sound.mp3")
+        filename = get_filename_from_caption_or_display_name(url, "insta_sound")
+        download_file(url, filename)
     elif opt == "5":
         main_menu()
     else:
@@ -131,16 +157,20 @@ def snapchat_menu():
     opt = input(f"{YELLOW}[{RED}•{YELLOW}] Select an option: {RESET}")
     if opt == "1":
         url = input(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Enter profile pic URL: ")
-        download_file(url, "snap_profile.jpg")
+        filename = get_filename_from_caption_or_display_name(url, "snap_profile")
+        download_file(url, filename)
     elif opt == "2":
         url = input(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Enter video URL: ")
-        download_file(url, "snap_video.mp4")
+        filename = get_filename_from_caption_or_display_name(url, "snap_video")
+        download_file(url, filename)
     elif opt == "3":
         url = input(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Enter photo URL: ")
-        download_file(url, "snap_photo.jpg")
+        filename = get_filename_from_caption_or_display_name(url, "snap_photo")
+        download_file(url, filename)
     elif opt == "4":
         url = input(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Enter sound URL: ")
-        download_file(url, "snap_sound.mp3")
+        filename = get_filename_from_caption_or_display_name(url, "snap_sound")
+        download_file(url, filename)
     elif opt == "5":
         main_menu()
     else:
@@ -159,20 +189,24 @@ def facebook_menu():
     opt = input(f"{YELLOW}[{RED}•{YELLOW}] Select an option: {RESET}")
     if opt == "1":
         url = input(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Enter profile pic URL: ")
-        download_file(url, "fb_profile.jpg")
+        filename = get_filename_from_caption_or_display_name(url, "fb_profile")
+        download_file(url, filename)
     elif opt == "2":
         url = input(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Enter video URL: ")
-        download_file(url, "fb_video.mp4")
+        filename = get_filename_from_caption_or_display_name(url, "fb_video")
+        download_file(url, filename)
     elif opt == "3":
         url = input(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Enter photo URL: ")
-        download_file(url, "fb_photo.jpg")
+        filename = get_filename_from_caption_or_display_name(url, "fb_photo")
+        download_file(url, filename)
     elif opt == "4":
         url = input(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Enter sound URL: ")
-        download_file(url, "fb_sound.mp3")
+        filename = get_filename_from_caption_or_display_name(url, "fb_sound")
+        download_file(url, filename)
     elif opt == "5":
         main_menu()
     else:
         facebook_menu()
 
-# Run the script
-main_menu()
+if __name__ == "__main__":
+    main_menu()
