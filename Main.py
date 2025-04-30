@@ -1,12 +1,14 @@
 import os
+import re
 import sys
 import platform
 import subprocess
 import requests
+import yt_dlp
 from urllib.parse import urlencode
 from tqdm import tqdm
 
-# ─── Utility Functions ─────────────────────────────────────────────────────────
+# ─── Utilities ─────────────────────────────────────────────────────────────────
 
 def clear():
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -23,178 +25,236 @@ def banner():
 """)
 
 def pause():
-    input("\n[•] Press Enter to return to menu...")
+    input("\n[•] Press Enter to return...")
 
-def ensure_package(pkg_name, import_name=None):
-    """Install pkg_name via pip if import import_name (or pkg_name) fails."""
+def ensure_package(pkg, imp=None):
     try:
-        __import__(import_name or pkg_name)
+        __import__(imp or pkg)
     except ImportError:
-        print(f"[!] {pkg_name} not found. Installing...")
-        subprocess.check_call([sys.executable, "-m", "pip", "install", pkg_name])
+        print(f"[!] Installing {pkg}...")
+        subprocess.check_call([sys.executable, "-m", "pip", "install", pkg])
 
-# ─── Feature Stubs ────────────────────────────────────────────────────────────
+def sanitize_filename(name):
+    name = re.sub(r'[\\/*?:"<>|]', "", name)
+    return name.strip().capitalize()[:50]
 
-def proxy_ua_generator():
-    clear(); banner()
-    print("[•] Proxy & User-Agent Generator")
-    # TODO: implement generator logic here
-    print("[✓] (stub) Proxy/User-Agent Generator executed.")
-    pause()
+def prompt_filename(default):
+    custom = input(f"[?] File name (Enter for '{default}'): ").strip()
+    final = sanitize_filename(custom) if custom else sanitize_filename(default)
+    # copy to clipboard (Termux)
+    os.system(f"termux-clipboard-set '{final}'")
+    print(f"[✓] Name copied: {final}")
+    return final
 
-def send_requests():
-    clear(); banner()
-    print("[•] HTTP Request Sender")
-    # TODO: implement request sending logic here
-    print("[✓] (stub) Requests sent.")
-    pause()
-
-def look_ip_info():
-    clear(); banner()
-    print("[•] IP Geolocation Info")
-    ip = input("[?] Enter IP (or blank for your own): ").strip() or None
+def save_with_progress(url, fname):
     try:
-        url = f"https://ipapi.co/{ip or ''}/json/"
-        data = requests.get(url).json()
-        for k, v in data.items():
-            print(f"[•] {k.capitalize()}: {v}")
+        r = requests.get(url, stream=True)
+        total = int(r.headers.get('content-length', 0))
+        with open(fname, 'wb') as f, tqdm(desc=fname, total=total, unit='B', unit_scale=True) as bar:
+            for chunk in r.iter_content(1024):
+                f.write(chunk); bar.update(len(chunk))
+        return True
     except Exception as e:
-        print(f"[!] Error: {e}")
+        print(f"[!] Download error: {e}")
+        return False
+
+def move_file(fname):
+    dst = '/sdcard/download'
+    os.makedirs(dst, exist_ok=True)
+    os.system(f"mv '{fname}' {dst}/")
+    print(f"[✓] Moved to {dst}/{fname}")
+
+# ─── TikTok ────────────────────────────────────────────────────────────────────
+
+def tiktok_profile_pic():
+    clear(); banner()
+    url = input("[?] TikTok profile URL: ").strip()
+    api = f"https://tikwm.com/api/?url={url}"
+    try:
+        data = requests.get(api).json()['data']
+        pic = data['author']['avatarThumb']
+        name = prompt_filename("tiktok_pp")
+        fname = f"{name}.jpg"
+        if save_with_progress(pic, fname): move_file(fname)
+    except Exception as e:
+        print(f"[!] {e}")
     pause()
 
-def social_reports():
+def tiktok_post():
     clear(); banner()
-    print("[•] Social Reports")
-    target = input("[?] Enter target username: ").strip()
-    number = input("[?] Number of reports: ").strip()
-    # TODO: implement social reporting here
-    print(f"[✓] (stub) Reported {target} {number} times.")
+    url = input("[?] TikTok post URL: ").strip()
+    api = f"https://tikwm.com/api/?url={url}"
+    try:
+        d = requests.get(api).json()['data']
+        desc = sanitize_filename(d.get('title') or "tiktok_post")
+        # detect type
+        if d.get('images'):
+            print("[•] Photo post detected")
+            print("[1] Download photos\n[2] Download sound\n[0] Back")
+            ch = input("[?] Choose: ").strip()
+            if ch=='1':
+                for i,img in enumerate(d['images'],1):
+                    name = prompt_filename(f"{desc}_{i}")
+                    fn=f"{name}.jpg"
+                    if save_with_progress(img, fn): move_file(fn)
+            elif ch=='2':
+                name=prompt_filename(desc+"_sound"); fn=f"{name}.mp4"
+                if save_with_progress(d['music'], fn): move_file(fn)
+        else:
+            print("[•] Video post detected")
+            print("[1] Download video\n[2] Download sound\n[0] Back")
+            ch = input("[?] Choose: ").strip()
+            if ch=='1':
+                name=prompt_filename(desc); fn=f"{name}.mp4"
+                if save_with_progress(d['play'], fn): move_file(fn)
+            elif ch=='2':
+                name=prompt_filename(desc+"_sound"); fn=f"{name}.mp4"
+                if save_with_progress(d['music'], fn): move_file(fn)
+    except Exception as e:
+        print(f"[!] {e}")
     pause()
 
-def facebook_id_extractor():
+def tiktok_copy_name():
     clear(); banner()
-    print("[•] Facebook IDs Extractor")
-    profile = input("[?] Target profile URL/ID: ").strip()
-    # TODO: implement extractor here
-    print(f"[✓] (stub) Extracted friends IDs from {profile}.")
-    pause()
-
-def encryption_tool():
-    clear(); banner()
-    print("[•] Encrypt Code")
-    lang = input("[?] Language (Python/JS/...): ").strip()
-    # TODO: implement encryption logic here
-    print(f"[✓] (stub) Code encrypted for {lang}.")
-    pause()
-
-# ─── Downloaders ──────────────────────────────────────────────────────────────
-
-def tiktok_downloader():
-    clear(); banner()
-    print("=== TikTok Downloader ===")
-    username = input("Enter TikTok username (simulated): ").strip()
+    username = input("[?] TikTok username: ").strip()
     if username:
-        print(f"[✓] Simulated download for TikTok user: {username}")
+        os.system(f"termux-clipboard-set '{username}'")
+        print(f"[✓] '{username}' copied to clipboard")
     else:
-        print("[!] No username provided.")
+        print("[!] No username entered")
     pause()
 
-def instagram_downloader():
+def tiktok_menu():
+    while True:
+        clear(); banner()
+        print("[TikTok Menu]\n1.Profile Pic  2.Post Downloader  3.Copy Name  0.Back")
+        ch = input("[?] Choose: ").strip()
+        if ch=='1': tiktok_profile_pic()
+        elif ch=='2': tiktok_post()
+        elif ch=='3': tiktok_copy_name()
+        elif ch=='0': break
+
+# ─── Instagram ─────────────────────────────────────────────────────────────────
+
+def instagram_profile_pic():
     clear(); banner()
-    print("=== Instagram Downloader ===")
-    ensure_package('instaloader')
-    import instaloader
-    username = input("Enter Instagram username: ").strip()
-    if not username:
-        print("[!] No username provided.")
-        pause(); return
+    url = input("[?] Instagram profile URL: ").strip()
     try:
-        loader = instaloader.Instaloader()
-        profile = instaloader.Profile.from_username(loader.context, username)
-        print(f"[•] Username : {profile.username}")
-        print(f"[•] Full Name: {profile.full_name}")
-        print(f"[•] Bio      : {profile.biography}")
-        print(f"[•] Posts    : {profile.mediacount}")
-        print(f"[•] Followers: {profile.followers}")
-        print(f"[•] Following: {profile.followees}")
-        # Download latest post as example:
-        loader.download_profile(username, profile_pic=False, download_videos=True, max_count=1)
-        print(f"[✓] Downloaded latest post of {username}.")
-    except Exception as e:
-        print(f"[!] Error: {e}")
+        res = requests.get(url).text
+        img = re.search(r'"profile_pic_url_hd":"([^"]+)"', res)[1].replace('\\u0026','&')
+        name = prompt_filename("insta_pp"); fn=f"{name}.jpg"
+        if save_with_progress(img, fn): move_file(fn)
+    except Exception as e: print(f"[!] {e}")
     pause()
 
-def youtube_downloader():
+def instagram_post():
     clear(); banner()
-    print("=== YouTube Downloader ===")
-    ensure_package('yt-dlp', 'yt_dlp')
-    import yt_dlp
-    url = input("Enter YouTube video URL: ").strip()
-    if not url:
-        print("[!] No URL provided."); pause(); return
+    url = input("[?] Instagram post URL: ").strip()
+    api = "https://instasupersave.com/api/convert"
+    data = urlencode({'q':url})
     try:
-        ydl_opts = {
-            'outtmpl': '%(title)s.%(ext)s',
-            'format': 'bestvideo+bestaudio/best'
-        }
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        res = requests.post(api, data=data, headers={'Content-Type':'application/x-www-form-urlencoded'}).json()
+        vids = re.findall(r'https.*?\.mp4', str(res))
+        imgs = re.findall(r'https.*?\.(?:jpg|png)', str(res))
+        print(f"[•] {len(vids)} videos, {len(imgs)} images found")
+        if vids:
+            name=prompt_filename("insta_video"); fn=f"{name}.mp4"
+            if save_with_progress(vids[0], fn): move_file(fn)
+        elif imgs:
+            name=prompt_filename("insta_img"); fn=f"{name}.jpg"
+            if save_with_progress(imgs[0], fn): move_file(fn)
+    except Exception as e: print(f"[!] {e}")
+    pause()
+
+def instagram_copy_name():
+    clear(); banner()
+    username = input("[?] Instagram username: ").strip()
+    if username:
+        os.system(f"termux-clipboard-set '{username}'")
+        print(f"[✓] '{username}' copied")
+    else: print("[!] No username")
+    pause()
+
+def instagram_menu():
+    while True:
+        clear(); banner()
+        print("[Instagram Menu]\n1.Profile Pic  2.Post Downloader  3.Copy Name  0.Back")
+        ch = input("[?] Choose: ").strip()
+        if ch=='1': instagram_profile_pic()
+        elif ch=='2': instagram_post()
+        elif ch=='3': instagram_copy_name()
+        elif ch=='0': break
+
+# ─── YouTube ────────────────────────────────────────────────────────────────────
+
+def youtube_profile_pic():
+    clear(); banner()
+    channel = input("[?] YouTube channel ID/URL: ").strip()
+    try:
+        info = yt_dlp.YoutubeDL({'quiet':True, 'extract_flat':True}).extract_info(channel, download=False)
+        thumb = info.get('thumbnail')
+        name=prompt_filename("yt_pp"); fn=f"{name}.jpg"
+        if save_with_progress(thumb, fn): move_file(fn)
+    except Exception as e: print(f"[!] {e}")
+    pause()
+
+def youtube_video():
+    clear(); banner()
+    url = input("[?] YouTube video URL: ").strip()
+    name = prompt_filename("yt_video"); fn_pattern = f"{name}.%(ext)s"
+    try:
+        with yt_dlp.YoutubeDL({'outtmpl':fn_pattern, 'format':'best'}) as ydl:
             ydl.download([url])
-        print("[✓] Download complete.")
-    except Exception as e:
-        print(f"[!] Error: {e}")
+        move_file(next(f for f in os.listdir('.') if f.startswith(name)))
+    except Exception as e: print(f"[!] {e}")
     pause()
 
-# ─── System/User Info ─────────────────────────────────────────────────────────
+def youtube_audio():
+    clear(); banner()
+    url = input("[?] YouTube video URL: ").strip()
+    name = prompt_filename("yt_audio"); fn_pattern = f"{name}.%(ext)s"
+    try:
+        opts={'outtmpl':fn_pattern,'format':'bestaudio/best','postprocessors':[{'key':'FFmpegExtractAudio','preferredcodec':'mp3'}]}
+        with yt_dlp.YoutubeDL(opts) as ydl:
+            ydl.download([url])
+        move_file(f"{name}.mp3")
+    except Exception as e: print(f"[!] {e}")
+    pause()
 
-def show_user_info():
-    print("\n[•] System / User Info")
-    print(f"[•] OS        : {platform.system()} {platform.release()}")
-    print(f"[•] Platform  : {platform.platform()}")
-    print(f"[•] Python    : {platform.python_version()}")
-    print(f"[•] Terminal  : {os.environ.get('TERM', 'Unknown')}\n")
+def youtube_copy_name():
+    clear(); banner()
+    url = input("[?] YouTube channel ID/URL: ").strip()
+    try:
+        info = yt_dlp.YoutubeDL({'quiet':True, 'extract_flat':True}).extract_info(url, download=False)
+        name=info.get('uploader')
+        os.system(f"termux-clipboard-set '{name}'")
+        print(f"[✓] Channel '{name}' copied")
+    except Exception as e: print(f"[!] {e}")
+    pause()
 
-# ─── Main Menu ────────────────────────────────────────────────────────────────
+def youtube_menu():
+    while True:
+        clear(); banner()
+        print("[YouTube Menu]\n1.Profile Pic  2.Download Video  3.Download Audio  4.Copy Name  0.Back")
+        ch = input("[?] Choose: ").strip()
+        if ch=='1': youtube_profile_pic()
+        elif ch=='2': youtube_video()
+        elif ch=='3': youtube_audio()
+        elif ch=='4': youtube_copy_name()
+        elif ch=='0': break
+
+# ─── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
     while True:
         clear(); banner()
-        show_user_info()
-        print("[1] Proxy & UA Generator")
-        print("[2] HTTP Request Sender")
-        print("[3] IP Geolocation Info")
-        print("[4] Social Reports")
-        print("[5] Facebook IDs Extractor")
-        print("[6] Encrypt Code")
-        print("[7] TikTok Downloader")
-        print("[8] Instagram Downloader")
-        print("[9] YouTube Downloader")
-        print("[0] Exit")
-        choice = input("\n[?] Choose: ").strip()
-
-        if choice == '1':
-            proxy_ua_generator()
-        elif choice == '2':
-            send_requests()
-        elif choice == '3':
-            look_ip_info()
-        elif choice == '4':
-            social_reports()
-        elif choice == '5':
-            facebook_id_extractor()
-        elif choice == '6':
-            encryption_tool()
-        elif choice == '7':
-            tiktok_downloader()
-        elif choice == '8':
-            instagram_downloader()
-        elif choice == '9':
-            youtube_downloader()
-        elif choice == '0':
-            print("\n[•] Bye.")
-            break
-        else:
-            print("[!] Invalid choice.")
-            pause()
+        print("[1] TikTok\n[2] Instagram\n[3] YouTube\n[0] Exit")
+        ch = input("[?] Choose: ").strip()
+        if ch=='1': tiktok_menu()
+        elif ch=='2': instagram_menu()
+        elif ch=='3': youtube_menu()
+        elif ch=='0':
+            print("Bye."); break
 
 if __name__ == '__main__':
     main()
