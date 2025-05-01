@@ -104,4 +104,4 @@ def main_menu():
             input("[Press ENTER]")
 
 if __name__ == "__main__":
-    main()
+    main_menu()
