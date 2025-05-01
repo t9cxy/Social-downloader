@@ -1,149 +1,78 @@
-import os
-import requests
-from pytube import YouTube
-from datetime import datetime
+import os import requests import re from urllib.parse import urlparse
 
-# Colors
-RED = '\033[91m'
-GREEN = '\033[92m'
-YELLOW = '\033[93m'
-CYAN = '\033[96m'
-RESET = '\033[0m'
+DOWNLOAD_DIR = "/sdcard/download"
 
-DOWNLOAD_PATH = "/sdcard/download"
+def clear(): os.system("clear" if os.name != "nt" else "cls")
 
-def clear():
-    os.system("clear")
+def sanitize_filename(name): return re.sub(r'[\/*?:"<>|]', "", name)
 
-def logo():
-    print(f"""{CYAN}
-████████╗██╗██╗  ██╗████████╗ ██████╗  ██████╗ ██╗     ███████╗
-╚══██╔══╝██║██║ ██╔╝╚══██╔══╝██╔═══██╗██╔═══██╗██║     ██╔════╝
-   ██║   ██║█████╔╝    ██║   ██║   ██║██║   ██║██║     █████╗  
-   ██║   ██║██╔═██╗    ██║   ██║   ██║██║   ██║██║     ██╔══╝  
-   ██║   ██║██║  ██╗   ██║   ╚██████╔╝╚██████╔╝███████╗███████╗
-   ╚═╝   ╚═╝╚═╝  ╚═╝   ╚═╝    ╚═════╝  ╚═════╝ ╚══════╝╚══════╝
-        {YELLOW}Developer: Alone | Telegram: @i4mAlone{RESET}
-""")
+def download_file(url, default_name): print(f"\n[?] Enter custom filename (leave blank to use default: '{default_name}'): ", end="") custom_name = input().strip() file_name = sanitize_filename(custom_name if custom_name else default_name) ext = os.path.splitext(urlparse(url).path)[1] path = os.path.join(DOWNLOAD_DIR, f"{file_name}{ext}")
 
-def ask_filename(default_name, ext):
-    name = input(f"{CYAN}[?] Custom filename (press Enter to use '{default_name}'): {RESET}").strip()
-    return os.path.join(DOWNLOAD_PATH, f"{name or default_name}.{ext}")
+try:
+    print(f"[•] Downloading to {path} ...")
+    r = requests.get(url, stream=True)
+    r.raise_for_status()
+    with open(path, "wb") as f:
+        for chunk in r.iter_content(chunk_size=8192):
+            f.write(chunk)
+    print(f"[✓] Download completed: {path}\n")
+except Exception as e:
+    print(f"[!] Download failed: {e}\n")
 
-def sanitize(text):
-    return ''.join(c if c.isalnum() or c in (' ', '-', '_') else '_' for c in text).strip()
+def download_tiktok(): clear() print("\n=== TikTok Options ===") print("[1] Download Video/Photo") print("[2] Download Profile Picture") print("[3] Download Sound (MP3/MP4)") print("[0] Back") choice = input("\nChoose: ")
 
-# TikTok (Placeholder)
-def download_tiktok_video():
-    url = input(f"\n{CYAN}[?] TikTok Video URL: {RESET}")
-    caption = f"tiktok_video_{datetime.now().strftime('%H%M%S')}"
-    filename = ask_filename(sanitize(caption), "mp4")
-    with open(filename, 'w') as f:
-        f.write("TikTok video data")
-    print(f"{GREEN}[✓] Saved to: {filename}{RESET}")
+if choice == "1":
+    url = input("Enter TikTok post link: ").strip()
+    caption = "tiktok_video"  # Placeholder
+    download_file(url, caption)
 
-def download_tiktok_photo():
-    url = input(f"\n{CYAN}[?] TikTok Photo URL: {RESET}")
-    caption = f"tiktok_photo_{datetime.now().strftime('%H%M%S')}"
-    filename = ask_filename(sanitize(caption), "jpg")
-    with open(filename, 'w') as f:
-        f.write("TikTok photo data")
-    print(f"{GREEN}[✓] Saved to: {filename}{RESET}")
+elif choice == "2":
+    url = input("Enter TikTok profile or video link: ").strip()
+    display_name = "tiktok_user"  # Placeholder
+    download_file(url, display_name)
 
-def download_tiktok_sound():
-    url = input(f"\n{CYAN}[?] TikTok Sound URL: {RESET}")
-    caption = f"tiktok_sound_{datetime.now().strftime('%H%M%S')}"
-    filename = ask_filename(sanitize(caption), "mp3")
-    with open(filename, 'w') as f:
-        f.write("TikTok sound data")
-    print(f"{GREEN}[✓] Saved to: {filename}{RESET}")
+elif choice == "3":
+    url = input("Enter TikTok sound link: ").strip()
+    sound_title = "tiktok_sound"  # Placeholder
+    download_file(url, sound_title)
 
-def download_tiktok_pfp():
-    url = input(f"\n{CYAN}[?] TikTok Profile URL: {RESET}")
-    name = f"tiktok_pfp_{datetime.now().strftime('%H%M%S')}"
-    filename = ask_filename(sanitize(name), "jpg")
-    with open(filename, 'w') as f:
-        f.write("TikTok profile picture")
-    print(f"{GREEN}[✓] Saved to: {filename}{RESET}")
+def download_instagram(): clear() print("\n=== Instagram Options ===") print("[1] Download Post (Video/Photo)") print("[2] Download Profile Picture") print("[0] Back") choice = input("\nChoose: ")
 
-# Instagram (Placeholder)
-def download_instagram_video():
-    url = input(f"\n{CYAN}[?] Instagram Video URL: {RESET}")
-    caption = f"insta_video_{datetime.now().strftime('%H%M%S')}"
-    filename = ask_filename(sanitize(caption), "mp4")
-    with open(filename, 'w') as f:
-        f.write("Instagram video data")
-    print(f"{GREEN}[✓] Saved to: {filename}{RESET}")
+if choice == "1":
+    url = input("Enter Instagram post link: ").strip()
+    caption = "instagram_post"  # Placeholder
+    download_file(url, caption)
 
-def download_instagram_pfp():
-    url = input(f"\n{CYAN}[?] Instagram Profile URL: {RESET}")
-    name = f"insta_pfp_{datetime.now().strftime('%H%M%S')}"
-    filename = ask_filename(sanitize(name), "jpg")
-    with open(filename, 'w') as f:
-        f.write("Instagram profile picture")
-    print(f"{GREEN}[✓] Saved to: {filename}{RESET}")
+elif choice == "2":
+    url = input("Enter Instagram profile link: ").strip()
+    display_name = "instagram_user"  # Placeholder
+    download_file(url, display_name)
 
-# YouTube
-def download_youtube_video():
-    url = input(f"\n{CYAN}[?] YouTube Video URL: {RESET}")
-    yt = YouTube(url)
-    default_name = sanitize(yt.title)
-    filename = ask_filename(default_name, "mp4")
-    yt.streams.get_highest_resolution().download(DOWNLOAD_PATH, filename=os.path.basename(filename))
-    print(f"{GREEN}[✓] Downloaded to: {filename}{RESET}")
+def download_youtube(): clear() print("\n=== YouTube Options ===") print("[1] Download Video") print("[2] Download Thumbnail") print("[0] Back") choice = input("\nChoose: ")
 
-# Menus
-def tiktok_menu():
-    while True:
-        print(f"""\n{CYAN}--- TikTok ---{RESET}
-1. Download Video
-2. Download Photo
-3. Download Sound
-4. Download Profile Picture
-0. Back""")
-        c = input(f"{CYAN}[>] Choose: {RESET}")
-        if c == '1': download_tiktok_video()
-        elif c == '2': download_tiktok_photo()
-        elif c == '3': download_tiktok_sound()
-        elif c == '4': download_tiktok_pfp()
-        elif c == '0': break
+if choice == "1":
+    url = input("Enter YouTube video link: ").strip()
+    caption = "youtube_video"  # Placeholder
+    download_file(url, caption)
 
-def instagram_menu():
-    while True:
-        print(f"""\n{CYAN}--- Instagram ---{RESET}
-1. Download Video
-2. Download Profile Picture
-0. Back""")
-        c = input(f"{CYAN}[>] Choose: {RESET}")
-        if c == '1': download_instagram_video()
-        elif c == '2': download_instagram_pfp()
-        elif c == '0': break
+elif choice == "2":
+    url = input("Enter YouTube video link (to get thumbnail): ").strip()
+    video_id = url.split("v=")[-1][:11]
+    thumb_url = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
+    download_file(thumb_url, f"youtube_thumb_{video_id}")
 
-def youtube_menu():
-    while True:
-        print(f"""\n{CYAN}--- YouTube ---{RESET}
-1. Download Video
-0. Back""")
-        c = input(f"{CYAN}[>] Choose: {RESET}")
-        if c == '1': download_youtube_video()
-        elif c == '0': break
+def main(): os.makedirs(DOWNLOAD_DIR, exist_ok=True) while True: clear() print(""" ███████╗██╗████████╗ ██████╗ ██╗  ██╗ ██╔════╝██║╚══██╔══╝██╔═══██╗██║ ██╔╝ █████╗  ██║   ██║   ██║   ██║█████╔╝ ██╔══╝  ██║   ██║   ██║   ██║██╔═██╗ ███████╗██║   ██║   ╚██████╔╝██║  ██╗ ╚══════╝╚═╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝ Downloader by @i4mAlone """) print("[1] TikTok") print("[2] Instagram") print("[3] YouTube") print("[0] Exit\n") choice = input("Choose: ")
 
-def main():
-    while True:
-        clear()
-        logo()
-        print(f"""{CYAN}
-1. TikTok
-2. Instagram
-3. YouTube
-0. Exit{RESET}""")
-        choice = input(f"{CYAN}[>] Choose: {RESET}")
-        if choice == '1': tiktok_menu()
-        elif choice == '2': instagram_menu()
-        elif choice == '3': youtube_menu()
-        elif choice == '0':
-            print(f"{YELLOW}Goodbye!{RESET}")
-            break
+if choice == "1":
+        download_tiktok()
+    elif choice == "2":
+        download_instagram()
+    elif choice == "3":
+        download_youtube()
+    elif choice == "0":
+        break
+    else:
+        print("[!] Invalid choice")
 
-if __name__ == "__main__":
-    main()
+if name == "main": main()
+
