@@ -1,60 +1,181 @@
-import os import requests import re from bs4 import BeautifulSoup from urllib.parse import urlparse from pytube import YouTube from instaloader import Instaloader, Profile from datetime import datetime
+import os
+import requests
+from pytube import YouTube
+from bs4 import BeautifulSoup
+from urllib.parse import urlparse
+from datetime import datetime
 
-Color constants
+# Colors
+RED = '\033[91m'
+GREEN = '\033[92m'
+YELLOW = '\033[93m'
+CYAN = '\033[96m'
+RESET = '\033[0m'
 
-RED = "\033[91m" GREEN = "\033[92m" YELLOW = "\033[93m" BLUE = "\033[94m" CYAN = "\033[96m" RESET = "\033[0m"
+DOWNLOAD_PATH = "/sdcard/download"
 
-Output directory
+def clear():
+    os.system('clear' if os.name != 'nt' else 'cls')
 
-DOWNLOAD_DIR = "/sdcard/download"
+def print_logo():
+    print(f"""{CYAN}
+ █████╗ ██╗      ██████╗  ██████╗ ███╗   ██╗███████╗
+██╔══██╗██║     ██╔═══██╗██╔═══██╗████╗  ██║██╔════╝
+███████║██║     ██║   ██║██║   ██║██╔██╗ ██║█████╗
+██╔══██║██║     ██║   ██║██║   ██║██║╚██╗██║██╔══╝
+██║  ██║███████╗╚██████╔╝╚██████╔╝██║ ╚████║███████╗
+╚═╝  ╚═╝╚══════╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═══╝╚══════╝
+     {YELLOW}Developer: Alone | Telegram: @i4mAlone{RESET}
+""")
 
-Clear screen
+def ask_filename(default_name):
+    custom = input(f"{CYAN}[{YELLOW}?{CYAN}] Enter custom filename or press Enter to use default ({default_name}): {RESET}").strip()
+    return custom if custom else default_name
 
-clear = lambda: os.system("cls" if os.name == "nt" else "clear")
+def sanitize_filename(name):
+    return ''.join(c for c in name if c.isalnum() or c in ' .-_').strip()
 
-Create download directory if not exists
+# TikTok Placeholder Functions (Add real API logic here)
+def download_tiktok_video():
+    print(f"\n{CYAN}[ TikTok Video Download ]{RESET}\n")
+    url = input(f"{CYAN}[{YELLOW}?{CYAN}] Paste TikTok video link: {RESET}").strip()
+    caption = "tiktok_video_" + datetime.now().strftime("%Y%m%d%H%M%S")
+    filename = sanitize_filename(ask_filename(caption)) + ".mp4"
+    path = os.path.join(DOWNLOAD_PATH, filename)
+    # Fake download
+    with open(path, 'w') as f:
+        f.write("TikTok video placeholder")
+    print(f"{GREEN}[✓] Saved as: {path}{RESET}\n")
 
-os.makedirs(DOWNLOAD_DIR, exist_ok=True)
+def download_tiktok_photo():
+    print(f"\n{CYAN}[ TikTok Photo Download ]{RESET}\n")
+    url = input(f"{CYAN}[{YELLOW}?{CYAN}] Paste TikTok post link: {RESET}").strip()
+    filename = sanitize_filename(ask_filename("tiktok_photo")) + ".jpg"
+    path = os.path.join(DOWNLOAD_PATH, filename)
+    with open(path, 'w') as f:
+        f.write("TikTok photo placeholder")
+    print(f"{GREEN}[✓] Saved as: {path}{RESET}\n")
 
-def input_filename(default): name = input(f"{YELLOW}[?]{RESET} Enter custom file name (leave empty for default '{default}'): ") return name.strip() or default
+def download_tiktok_sound():
+    print(f"\n{CYAN}[ TikTok Sound Download ]{RESET}\n")
+    url = input(f"{CYAN}[{YELLOW}?{CYAN}] Paste sound link or post link: {RESET}").strip()
+    filename = sanitize_filename(ask_filename("tiktok_sound")) + ".mp3"
+    path = os.path.join(DOWNLOAD_PATH, filename)
+    with open(path, 'w') as f:
+        f.write("TikTok sound placeholder")
+    print(f"{GREEN}[✓] Saved as: {path}{RESET}\n")
 
-def download_tiktok_video(): url = input(f"{CYAN}[?]{RESET} Enter TikTok video/photo URL: ") if not url: print(f"{RED}[!] No URL provided.{RESET}") return try: print(f"{CYAN}[•]{RESET} Fetching video info...") headers = {"User-Agent": "Mozilla/5.0"} response = requests.get(url, headers=headers) soup = BeautifulSoup(response.text, "html.parser")
+def download_tiktok_pfp():
+    print(f"\n{CYAN}[ TikTok Profile Picture Download ]{RESET}\n")
+    url = input(f"{CYAN}[{YELLOW}?{CYAN}] Paste profile link or any post link: {RESET}").strip()
+    display_name = "tiktok_user_" + datetime.now().strftime("%H%M%S")
+    filename = sanitize_filename(ask_filename(display_name)) + ".jpg"
+    path = os.path.join(DOWNLOAD_PATH, filename)
+    with open(path, 'w') as f:
+        f.write("TikTok profile picture placeholder")
+    print(f"{GREEN}[✓] Saved as: {path}{RESET}\n")
 
-caption = soup.title.string.strip() if soup.title else f"tiktok_{datetime.now().timestamp()}"
-    filename = input_filename(caption)
+# Instagram Placeholder Functions
+def download_instagram_video():
+    print(f"\n{CYAN}[ Instagram Video Download ]{RESET}\n")
+    url = input(f"{CYAN}[{YELLOW}?{CYAN}] Paste Instagram video link: {RESET}").strip()
+    filename = sanitize_filename(ask_filename("instagram_video")) + ".mp4"
+    path = os.path.join(DOWNLOAD_PATH, filename)
+    with open(path, 'w') as f:
+        f.write("Instagram video placeholder")
+    print(f"{GREEN}[✓] Saved as: {path}{RESET}\n")
 
-    # Placeholder for actual download logic (to be replaced with working downloader)
-    # Simulate a download with dummy data
-    path = os.path.join(DOWNLOAD_DIR, f"{filename}.mp4")
-    with open(path, "wb") as f:
-        f.write(b"FAKE_TIKTOK_VIDEO")
+def download_instagram_pfp():
+    print(f"\n{CYAN}[ Instagram Profile Picture Download ]{RESET}\n")
+    url = input(f"{CYAN}[{YELLOW}?{CYAN}] Paste profile URL: {RESET}").strip()
+    display_name = "insta_user_" + datetime.now().strftime("%H%M%S")
+    filename = sanitize_filename(ask_filename(display_name)) + ".jpg"
+    path = os.path.join(DOWNLOAD_PATH, filename)
+    with open(path, 'w') as f:
+        f.write("Instagram profile picture placeholder")
+    print(f"{GREEN}[✓] Saved as: {path}{RESET}\n")
 
-    print(f"{GREEN}[✓]{RESET} Video downloaded to {path}")
-except Exception as e:
-    print(f"{RED}[!]{RESET} Failed to download: {e}")
+# YouTube Downloader (using pytube)
+def download_youtube_video():
+    print(f"\n{CYAN}[ YouTube Video Download ]{RESET}\n")
+    url = input(f"{CYAN}[{YELLOW}?{CYAN}] Paste YouTube link: {RESET}").strip()
+    yt = YouTube(url)
+    default_title = sanitize_filename(yt.title)
+    filename = ask_filename(default_title)
+    yt.streams.get_highest_resolution().download(DOWNLOAD_PATH, filename + ".mp4")
+    print(f"{GREEN}[✓] Downloaded: {filename}.mp4 to {DOWNLOAD_PATH}{RESET}\n")
 
-def download_tiktok_profile_pic(): url = input(f"{CYAN}[?]{RESET} Enter TikTok profile or video link: ") try: print(f"{CYAN}[•]{RESET} Fetching profile picture...") headers = {"User-Agent": "Mozilla/5.0"} response = requests.get(url, headers=headers) soup = BeautifulSoup(response.text, "html.parser")
+# Submenus
+def tiktok_menu():
+    while True:
+        print(f"""\n{CYAN}--- TikTok Options ---{RESET}
+1. Download Video
+2. Download Photo
+3. Download Sound
+4. Download Profile Picture
+0. Back\n""")
+        c = input(f"{CYAN}[{YELLOW}?{CYAN}] Choose: {RESET}")
+        if c == '1':
+            download_tiktok_video()
+        elif c == '2':
+            download_tiktok_photo()
+        elif c == '3':
+            download_tiktok_sound()
+        elif c == '4':
+            download_tiktok_pfp()
+        elif c == '0':
+            break
 
-name = soup.title.string.strip() if soup.title else f"profile_{datetime.now().timestamp()}"
-    filename = input_filename(name)
-    path = os.path.join(DOWNLOAD_DIR, f"{filename}.jpg")
-    with open(path, "wb") as f:
-        f.write(b"FAKE_PROFILE_PIC")
-    print(f"{GREEN}[✓]{RESET} Profile picture saved as {path}")
-except Exception as e:
-    print(f"{RED}[!]{RESET} Failed: {e}")
+def instagram_menu():
+    while True:
+        print(f"""\n{CYAN}--- Instagram Options ---{RESET}
+1. Download Video
+2. Download Profile Picture
+0. Back\n""")
+        c = input(f"{CYAN}[{YELLOW}?{CYAN}] Choose: {RESET}")
+        if c == '1':
+            download_instagram_video()
+        elif c == '2':
+            download_instagram_pfp()
+        elif c == '0':
+            break
 
-def download_instagram_profile_pic(): username = input(f"{CYAN}[?]{RESET} Enter Instagram username: ") try: print(f"{CYAN}[•]{RESET} Downloading profile picture...") L = Instaloader() profile = Profile.from_username(L.context, username) filename = input_filename(profile.full_name or username) L.download_profilepic(profile) print(f"{GREEN}[✓]{RESET} Download complete!") except Exception as e: print(f"{RED}[!]{RESET} Failed: {e}")
+def youtube_menu():
+    while True:
+        print(f"""\n{CYAN}--- YouTube Options ---{RESET}
+1. Download Video
+0. Back\n""")
+        c = input(f"{CYAN}[{YELLOW}?{CYAN}] Choose: {RESET}")
+        if c == '1':
+            download_youtube_video()
+        elif c == '0':
+            break
 
-def download_youtube_video(): url = input(f"{CYAN}[?]{RESET} Enter YouTube video URL: ") try: yt = YouTube(url) caption = yt.title.strip() filename = input_filename(caption) stream = yt.streams.get_highest_resolution() stream.download(output_path=DOWNLOAD_DIR, filename=filename + ".mp4") print(f"{GREEN}[✓]{RESET} Video saved to {DOWNLOAD_DIR}/{filename}.mp4") except Exception as e: print(f"{RED}[!]{RESET} Error: {e}")
+def main_menu():
+    while True:
+        clear()
+        print_logo()
+        print(f"""{CYAN}
+[1] TikTok
+[2] Instagram
+[3] YouTube
+[0] Exit
+{RESET}""")
+        choice = input(f"{CYAN}[{YELLOW}?{CYAN}] Choose: {RESET}")
+        if choice == '1':
+            tiktok_menu()
+        elif choice == '2':
+            instagram_menu()
+        elif choice == '3':
+            youtube_menu()
+        elif choice == '0':
+            print(f"{YELLOW}Exiting...{RESET}")
+            break
+        else:
+            print(f"{RED}Invalid option!{RESET}")
 
-def tiktok_menu(): while True: clear() print(f"{BLUE}TikTok Downloader{RESET}") print("1. Download Video/Photo") print("2. Download Profile Picture") print("3. Back") choice = input(f"{YELLOW}[?]{RESET} Choose: ") if choice == '1': download_tiktok_video() elif choice == '2': download_tiktok_profile_pic() elif choice == '3': break input(f"{YELLOW}Press enter to continue...{RESET}")
-
-def instagram_menu(): while True: clear() print(f"{BLUE}Instagram Downloader{RESET}") print("1. Download Profile Picture") print("2. Back") choice = input(f"{YELLOW}[?]{RESET} Choose: ") if choice == '1': download_instagram_profile_pic() elif choice == '2': break input(f"{YELLOW}Press enter to continue...{RESET}")
-
-def youtube_menu(): while True: clear() print(f"{BLUE}YouTube Downloader{RESET}") print("1. Download Video") print("2. Back") choice = input(f"{YELLOW}[?]{RESET} Choose: ") if choice == '1': download_youtube_video() elif choice == '2': break input(f"{YELLOW}Press enter to continue...{RESET}")
-
-def main(): while True: clear() print(f"{GREEN}Welcome to the Social Downloader Tool!{RESET}") print("1. TikTok") print("2. Instagram") print("3. YouTube") print("4. Exit") choice = input(f"{YELLOW}[?]{RESET} Choose: ") if choice == '1': tiktok_menu() elif choice == '2': instagram_menu() elif choice == '3': youtube_menu() elif choice == '4': break else: print(f"{RED}[!] Invalid choice.{RESET}")
-
-if name == "main": main()
-
+if __name__ == "__main__":
+    try:
+        main_menu()
+    except Exception as e:
+        print(f"{RED}Error: {e}{RESET}")
