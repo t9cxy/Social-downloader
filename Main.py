@@ -1,140 +1,142 @@
 import os
-import requests
 import time
-from pytube import YouTube
+import requests
 from bs4 import BeautifulSoup
+from pytube import YouTube
 from colorama import Fore, Style
 
-# Function to clear the terminal screen
+# Terminal clear
 def clear():
-    if os.name == 'nt':
-        os.system('cls')
-    else:
-        os.system('clear')
+    os.system("cls" if os.name == "nt" else "clear")
 
-# Color variables
+# Colors
 CYAN = Fore.CYAN
 YELLOW = Fore.YELLOW
 GREEN = Fore.GREEN
 RED = Fore.RED
 RESET = Style.RESET_ALL
 
-# Function to download TikTok video
+# TikTok downloader
 def download_tiktok():
-    print(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Enter the TikTok video link:")
-    video_link = input(f"{CYAN}[{YELLOW}> {CYAN}]{RESET} ")
-    print(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Do you want to specify a custom name for the video?")
-    custom_name = input(f"{CYAN}[{YELLOW}> {CYAN}]{RESET} (Leave blank for default name): ")
+    print(f"{CYAN}[?]{RESET} Enter the TikTok video link:")
+    url = input(f"{CYAN}[>]{RESET} ")
+
+    print(f"{CYAN}[?]{RESET} Do you want to specify a custom name?")
+    custom_name = input(f"{CYAN}[>]{RESET} (Leave blank for default name): ").strip()
 
     try:
-        # Fetching TikTok video page
-        response = requests.get(video_link)
-        soup = BeautifulSoup(response.text, 'html.parser')
-        
-        # Find the description meta tag
-        description_meta = soup.find('meta', property='og:description')
-        if description_meta:
-            description = description_meta['content']
-        else:
-            description = "TikTok_Video"  # Fallback if description is not found
+        res = requests.get(url)
+        soup = BeautifulSoup(res.text, 'html.parser')
+        desc_tag = soup.find("meta", property="og:description")
 
-        video_name = custom_name if custom_name else description
-        print(f"{CYAN}[{YELLOW}!{CYAN}]{RESET} Downloading TikTok video as '{video_name}'...")
+        if not desc_tag or not desc_tag.get("content"):
+            print(f"{RED}[!]{RESET} Failed to extract video caption. Cannot continue.")
+            time.sleep(2)
+            return
 
-        # Simulate download process
-        time.sleep(3)
+        default_name = desc_tag['content'].split('#')[0].strip()  # remove hashtags if present
+        file_name = custom_name if custom_name else default_name
 
-        print(f"{CYAN}[{GREEN}✔{CYAN}]{RESET} Video downloaded successfully! (saved as '{video_name}')")
+        print(f"{CYAN}[!]{RESET} Downloading TikTok video as '{file_name}.mp4'...")
+        time.sleep(2)
+        # Simulate saving
+        with open(f"/sdcard/download/{file_name}.mp4", "w") as f:
+            f.write("FAKE VIDEO DATA")  # Replace with real video logic
+
+        print(f"{CYAN}[✓]{RESET} Saved as {file_name}.mp4")
         time.sleep(2)
 
     except Exception as e:
-        print(f"{CYAN}[{RED}!{CYAN}]{RESET} Error while downloading TikTok video: {str(e)}")
+        print(f"{RED}[!]{RESET} Error: {e}")
         time.sleep(2)
 
-# Function to download Instagram content
+# Instagram downloader
 def download_instagram():
-    print(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Enter the Instagram post link:")
-    post_link = input(f"{CYAN}[{YELLOW}> {CYAN}]{RESET} ")
-    print(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Do you want to specify a custom name for the post?")
-    custom_name = input(f"{CYAN}[{YELLOW}> {CYAN}]{RESET} (Leave blank for default name): ")
+    print(f"{CYAN}[?]{RESET} Enter the Instagram post link:")
+    url = input(f"{CYAN}[>]{RESET} ")
+
+    print(f"{CYAN}[?]{RESET} Do you want to specify a custom name?")
+    custom_name = input(f"{CYAN}[>]{RESET} (Leave blank for default name): ").strip()
 
     try:
-        # Fetching Instagram post page
-        response = requests.get(post_link)
-        soup = BeautifulSoup(response.text, 'html.parser')
+        res = requests.get(url)
+        soup = BeautifulSoup(res.text, 'html.parser')
+        desc_tag = soup.find("meta", property="og:description")
 
-        # Find the description meta tag
-        description_meta = soup.find('meta', property='og:description')
-        if description_meta:
-            description = description_meta['content']
-        else:
-            description = "Instagram_Post"  # Fallback if description is not found
+        if not desc_tag or not desc_tag.get("content"):
+            print(f"{RED}[!]{RESET} Failed to extract post caption. Cannot continue.")
+            time.sleep(2)
+            return
 
-        post_name = custom_name if custom_name else description
-        print(f"{CYAN}[{YELLOW}!{CYAN}]{RESET} Downloading Instagram post as '{post_name}'...")
+        default_name = desc_tag['content'].split('#')[0].strip()
+        file_name = custom_name if custom_name else default_name
 
-        # Simulate download process
-        time.sleep(3)
+        print(f"{CYAN}[!]{RESET} Downloading Instagram post as '{file_name}.jpg'...")
+        time.sleep(2)
+        with open(f"/sdcard/download/{file_name}.jpg", "w") as f:
+            f.write("FAKE IMAGE DATA")
 
-        print(f"{CYAN}[{GREEN}✔{CYAN}]{RESET} Instagram content downloaded successfully! (saved as '{post_name}')")
+        print(f"{CYAN}[✓]{RESET} Saved as {file_name}.jpg")
         time.sleep(2)
 
     except Exception as e:
-        print(f"{CYAN}[{RED}!{CYAN}]{RESET} Error while downloading Instagram content: {str(e)}")
+        print(f"{RED}[!]{RESET} Error: {e}")
         time.sleep(2)
 
-# Function to download YouTube video
+# YouTube downloader
 def download_youtube():
-    print(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Enter the YouTube video link:")
-    video_link = input(f"{CYAN}[{YELLOW}> {CYAN}]{RESET} ")
-    print(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Do you want to specify a custom name for the video?")
-    custom_name = input(f"{CYAN}[{YELLOW}> {CYAN}]{RESET} (Leave blank for default name): ")
+    print(f"{CYAN}[?]{RESET} Enter the YouTube video link:")
+    url = input(f"{CYAN}[>]{RESET} ")
+
+    print(f"{CYAN}[?]{RESET} Do you want to specify a custom name?")
+    custom_name = input(f"{CYAN}[>]{RESET} (Leave blank for default name): ").strip()
 
     try:
-        yt = YouTube(video_link)
-        video_name = custom_name if custom_name else yt.title
-        video_stream = yt.streams.filter(progressive=True, file_extension="mp4").first()
+        yt = YouTube(url)
+        file_name = custom_name if custom_name else yt.title
 
-        print(f"{CYAN}[{YELLOW}!{CYAN}]{RESET} Downloading YouTube video as '{video_name}'...")
-        video_stream.download('/sdcard/download', filename=video_name + '.mp4')
+        print(f"{CYAN}[!]{RESET} Downloading YouTube video as '{file_name}.mp4'...")
+        stream = yt.streams.filter(progressive=True, file_extension="mp4").first()
+        stream.download("/sdcard/download", filename=file_name + ".mp4")
 
-        print(f"{CYAN}[{GREEN}✔{CYAN}]{RESET} YouTube video downloaded successfully! (saved as '{video_name}.mp4')")
+        print(f"{CYAN}[✓]{RESET} Saved as {file_name}.mp4")
         time.sleep(2)
 
     except Exception as e:
-        print(f"{CYAN}[{RED}!{CYAN}]{RESET} Error while downloading YouTube video: {str(e)}")
+        print(f"{RED}[!]{RESET} Error: {e}")
         time.sleep(2)
 
-# Main menu function to keep the script running
+# Main menu
 def main_menu():
     while True:
         clear()
-        print(f"{CYAN}██████╗ ██╗      ██████╗  ██████╗ ███╗   ██╗███████╗")
-        print(f"{CYAN}██╔══██╗██║     ██╔═══██╗██╔═══██╗████╗  ██║██╔════╝")
-        print(f"{CYAN}███████║██║     ██║   ██║██║   ██║██╔██╗ ██║█████╗")
-        print(f"{CYAN}██╔══██║██║     ██║   ██║██║   ██║██║╚██╗██║██╔══╝")
-        print(f"{CYAN}██║  ██║███████╗╚██████╔╝╚██████╔╝██║ ╚████║███████╗")
-        print(f"{CYAN}╚═╝  ╚═╝╚══════╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═══╝╚══════╝")
-        print(f"{CYAN}         Developer: Alone | Telegram: @i4mAlone")
-        print(f"{CYAN}[1] TikTok Downloader")
-        print(f"{CYAN}[2] Instagram Downloader")
-        print(f"{CYAN}[3] YouTube Downloader")
-        print(f"{CYAN}[0] Exit")
+        print(f"""{CYAN}
+██████╗ ██╗      ██████╗  ██████╗ ███╗   ██╗███████╗
+██╔══██╗██║     ██╔═══██╗██╔═══██╗████╗  ██║██╔════╝
+███████║██║     ██║   ██║██║   ██║██╔██╗ ██║█████╗
+██╔══██║██║     ██║   ██║██║   ██║██║╚██╗██║██╔══╝
+██║  ██║███████╗╚██████╔╝╚██████╔╝██║ ╚████║███████╗
+╚═╝  ╚═╝╚══════╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═══╝╚══════╝
+      Developer: Alone | Telegram: @i4mAlone
+{RESET}""")
+        print(f"{CYAN}[1]{RESET} TikTok Downloader")
+        print(f"{CYAN}[2]{RESET} Instagram Downloader")
+        print(f"{CYAN}[3]{RESET} YouTube Downloader")
+        print(f"{CYAN}[0]{RESET} Exit")
+        choice = input(f"{CYAN}[?]{RESET} Choose an option: ").strip()
 
-        choice = input(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Choose an option: ")
-
-        if choice == '1':
+        if choice == "1":
             download_tiktok()
-        elif choice == '2':
+        elif choice == "2":
             download_instagram()
-        elif choice == '3':
+        elif choice == "3":
             download_youtube()
-        elif choice == '0':
-            print(f"{CYAN}[{RED}!{CYAN}]{RESET} Exiting the tool...")
+        elif choice == "0":
+            print(f"{CYAN}[✓]{RESET} Exiting...")
+            time.sleep(1)
             break
         else:
-            print(f"{CYAN}[{RED}!{CYAN}]{RESET} Invalid choice, please try again!")
-            time.sleep(2)
+            print(f"{RED}[!]{RESET} Invalid option.")
+            time.sleep(1)
 
-# Start the menu
 main_menu()
