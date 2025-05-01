@@ -8,7 +8,11 @@ def clear(): os.system('clear' if os.name != 'nt' else 'cls')
 
 def generate_random_name(length=8): return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
 
-def download_youtube(): clear() print(f"""{CYAN} YouTube Downloader {RESET}")
+def download_youtube(): clear() print(f"""{CYAN}
+
+YouTube Downloader
+
+{RESET}")
 
 url = input(f"{CYAN}[?]{RESET} Enter YouTube video URL: ")
 if not url:
@@ -19,23 +23,30 @@ try:
     yt = YouTube(url)
     title = yt.title.strip().split('|')[0].split('#')[0]
 
+    print()
     custom_name = input(f"{CYAN}[?]{RESET} Custom filename? (Leave blank for default): ").strip()
     filename = custom_name if custom_name else title or generate_random_name()
     filename = filename.replace(' ', '_')
 
+    print()
     print(f"{YELLOW}[~]{RESET} Downloading {filename}...")
-
     stream = yt.streams.get_highest_resolution()
     stream.download(output_path='/sdcard/download', filename=f"{filename}.mp4")
 
+    print()
     print(f"{GREEN}[✓]{RESET} Saved as /sdcard/download/{filename}.mp4")
 
 except Exception as e:
+    print()
     print(f"{RED}[!]{RESET} Error: {e}")
 
 time.sleep(3)
 
-def download_tiktok(): clear() print(f"""{CYAN} TikTok Downloader {RESET}")
+def download_tiktok(): clear() print(f"""{CYAN}
+
+TikTok Downloader
+
+{RESET}")
 
 url = input(f"{CYAN}[?]{RESET} Enter TikTok video URL: ")
 if not url:
@@ -57,18 +68,25 @@ try:
     if not dl_url:
         raise Exception("Failed to extract download link.")
 
-    caption = "tiktok_video"
+    caption = generate_random_name()
+
+    print()
     filename = input(f"{CYAN}[?]{RESET} Custom filename? (Leave blank for default): ").strip()
-    filename = filename if filename else caption or generate_random_name()
+    filename = filename if filename else caption
     filename = filename.replace(' ', '_')
 
+    print()
+    print(f"{YELLOW}[~]{RESET} Downloading {filename}...")
     video_data = session.get(dl_url).content
+
     with open(f"/sdcard/download/{filename}.mp4", "wb") as f:
         f.write(video_data)
 
+    print()
     print(f"{GREEN}[✓]{RESET} Saved as /sdcard/download/{filename}.mp4")
 
 except Exception as e:
+    print()
     print(f"{RED}[!]{RESET} Error: {e}")
 
 time.sleep(3)
@@ -82,20 +100,25 @@ def main(): while True: clear() print(f"""{CYAN}
 ██║  ██║███████╗╚██████╔╝██║ ╚████║███████╗
 ╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚═╝  ╚═══╝╚══════╝
 
-{RESET}       {YELLOW}Developer: Alone | Telegram: @i4mAlone{RESET}
+{YELLOW}Developer: Alone | Telegram: @i4mAlone{RESET}
 
-[1] TikTok Downloader [2] YouTube Downloader [0] Exit
+[1] TikTok Downloader
 
-""")
+[2] YouTube Downloader
 
-choice = input(f"{CYAN}[?]{RESET} Choose an option: ")
+[0] Exit
 
-    if choice == '1':
+""") choice = input(f"{CYAN}[?]{RESET} Choose an option: ") print()
+
+if choice == '1':
         download_tiktok()
+
     elif choice == '2':
         download_youtube()
+
     elif choice == '0':
         break
+
     else:
         print(f"{RED}[!] Invalid choice.{RESET}")
         time.sleep(2)
