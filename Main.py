@@ -1,132 +1,140 @@
 import os
-import re
-import subprocess
+import requests
 from rich.console import Console
 from rich.panel import Panel
+from rich import print
 
 console = Console()
 
 def clear(): os.system("clear")
 
-def banner():
-    console.print(Panel.fit("[bold cyan]TIKTOK DOWNLOADER TOOL[/bold cyan]\n[green]by Alone[/green]"))
+def logo():
+    return """
+[bold cyan]
+████████╗██╗██╗░░██╗██╗░█████╗░██╗░░██╗
+╚══██╔══╝██║╚██╗██╔╝██║██╔══██╗██║░██╔╝
+░░░██║░░░██║░╚███╔╝░██║███████║█████═╝░
+░░░██║░░░██║░██╔██╗░██║██╔══██║██╔═██╗░
+░░░██║░░░██║██╔╝╚██╗██║██║░░██║██║░╚██╗
+░░░╚═╝░░░╚═╝╚═╝░░╚═╝╚═╝╚═╝░░╚═╝╚═╝░░╚═╝
+[/bold cyan]
+"""
 
 def main_menu():
-    banner()
-    console.print("[bold yellow]Main Menu:[/bold yellow]")
-    console.print("[cyan]1.[/cyan] TikTok")
-    console.print("[cyan]0.[/cyan] Exit")
+    clear()
+    console.print(Panel.fit(logo() + "\n[bold green]1.[/bold green] TikTok\n[bold red]0.[/bold red] Exit", title="[bold blue]MAIN MENU[/bold blue]"))
 
 def tiktok_menu():
     clear()
-    banner()
-    console.print("[bold yellow]TikTok Options:[/bold yellow]")
-    console.print("[cyan]1.[/cyan] Download Profile Picture")
-    console.print("[cyan]2.[/cyan] Download Video")
-    console.print("[cyan]3.[/cyan] Download Thumbnail/Photo")
-    console.print("[cyan]4.[/cyan] Download Sound")
-    console.print("[cyan]0.[/cyan] Back")
+    console.print(Panel.fit(logo() + """
+[bold green]1.[/bold green] Download Profile Picture
+[bold green]2.[/bold green] Download Video (No Watermark)
+[bold green]3.[/bold green] Download Thumbnail
+[bold green]4.[/bold green] Download Sound (MP3)
+[bold red]0.[/bold red] Back
+""", title="[bold blue]TIKTOK MENU[/bold blue]"))
 
-def ask_filename():
-    custom_name = input("\n[?] Enter custom filename (no extension): ").strip()
-    return custom_name
+def move_to_sdcard(filename):
+    os.system(f"mv \"{filename}\" /sdcard/download")
+    print(f"[green][✔] Moved to /sdcard/download/{filename}[/green]")
 
-def download_profile_pic(link):
-    console.print("[blue]Fetching profile picture...[/blue]")
-    username = re.findall(r'tiktok\.com/@([a-zA-Z0-9_.]+)', link)
-    if not username:
-        console.print("[red]Invalid profile URL![/red]")
-        return
+def custom_filename(ext):
+    name = input("[?] Enter custom file name (no extension): ").strip()
+    return name + ext
+
+def download_video_nowm(url):
+    print("[yellow][•] Getting direct download link...[/yellow]")
     try:
-        from TikTokApi import TikTokApi
-        api = TikTokApi()
-        user = api.user(username[0])
-        user_info = user.info()
-        avatar_url = user_info['user']['avatarLarger']
-        filename = ask_filename() + ".jpg"
-        os.system(f"wget -O {filename} \"{avatar_url}\"")
-        os.system(f"mv {filename} /sdcard/download")
-        console.print(f"[green]Saved as {filename} in /sdcard/download[/green]")
+        video_id = url.split("/video/")[-1].split("?")[0]
+        api = f"https://www.tikwm.com/api/?url={url}"
+        r = requests.get(api).json()
+        if not r.get("data"):
+            print("[red][×] Failed to get video.[/red]")
+            return
+        dl_url = r['data']['play']
+        filename = custom_filename(".mp4")
+        os.system(f'wget -q "{dl_url}" -O "{filename}"')
+        move_to_sdcard(filename)
     except Exception as e:
-        console.print(f"[red]Error:[/red] {e}")
+        print(f"[red][×] Error: {e}[/red]")
 
-def download_video(link):
-    console.print("[blue]Downloading video...[/blue]")
-    filename = ask_filename() + ".mp4"
+def download_sound(url):
+    print("[yellow][•] Getting sound link...[/yellow]")
     try:
-        subprocess.run([
-            "yt-dlp", "-o", filename, link
-        ])
-        os.system(f"mv \"{filename}\" /sdcard/download")
-        console.print(f"[green]Saved as {filename} in /sdcard/download[/green]")
+        api = f"https://www.tikwm.com/api/?url={url}"
+        r = requests.get(api).json()
+        if not r.get("data"):
+            print("[red][×] Failed to get sound.[/red]")
+            return
+        sound_url = r['data']['music']
+        filename = custom_filename(".mp3")
+        os.system(f'wget -q "{sound_url}" -O "{filename}"')
+        move_to_sdcard(filename)
     except Exception as e:
-        console.print(f"[red]Error:[/red] {e}")
+        print(f"[red][×] Error: {e}[/red]")
 
-def download_photo(link):
-    console.print("[blue]Downloading thumbnail...[/blue]")
-    filename = ask_filename() + ".jpg"
+def download_thumbnail(url):
+    print("[yellow][•] Getting thumbnail...[/yellow]")
     try:
-        subprocess.run([
-            "yt-dlp", "--write-thumbnail", "--skip-download", "-o", filename, link
-        ])
-        # yt-dlp adds .webp by default, rename it
-        webp_file = filename + ".webp"
-        if os.path.exists(webp_file):
-            os.rename(webp_file, filename)
-            os.system(f"mv {filename} /sdcard/download")
-            console.print(f"[green]Saved as {filename} in /sdcard/download[/green]")
-        else:
-            console.print("[red]Thumbnail not found[/red]")
+        api = f"https://www.tikwm.com/api/?url={url}"
+        r = requests.get(api).json()
+        if not r.get("data"):
+            print("[red][×] Failed to get thumbnail.[/red]")
+            return
+        thumb_url = r['data']['cover']
+        filename = custom_filename(".jpg")
+        os.system(f'wget -q "{thumb_url}" -O "{filename}"')
+        move_to_sdcard(filename)
     except Exception as e:
-        console.print(f"[red]Error:[/red] {e}")
+        print(f"[red][×] Error: {e}[/red]")
 
-def download_sound(link):
-    console.print("[blue]Downloading sound...[/blue]")
-    filename = ask_filename() + ".mp3"
+def download_profile_pic(url):
+    print("[yellow][•] Getting profile picture...[/yellow]")
     try:
-        subprocess.run([
-            "yt-dlp", "-x", "--audio-format", "mp3", "-o", filename, link
-        ])
-        os.system(f"mv \"{filename}\" /sdcard/download")
-        console.print(f"[green]Saved as {filename} in /sdcard/download[/green]")
+        username = url.strip().split("@")[-1].split("/")[0]
+        api = f"https://www.tikwm.com/api/user/info?unique_id={username}"
+        r = requests.get(api).json()
+        avatar_url = r['data']['user']['avatar']
+        filename = custom_filename(".jpg")
+        os.system(f'wget -q "{avatar_url}" -O "{filename}"')
+        move_to_sdcard(filename)
     except Exception as e:
-        console.print(f"[red]Error:[/red] {e}")
+        print(f"[red][×] Error: {e}[/red]")
 
 def tiktok_handler():
     while True:
         tiktok_menu()
-        choice = input("\n[?] Enter choice: ").strip()
-        if choice == "1":
-            link = input("[?] Enter TikTok profile URL: ").strip()
-            download_profile_pic(link)
-        elif choice == "2":
-            link = input("[?] Enter TikTok video URL: ").strip()
-            download_video(link)
-        elif choice == "3":
-            link = input("[?] Enter TikTok video URL: ").strip()
-            download_photo(link)
-        elif choice == "4":
-            link = input("[?] Enter TikTok video or sound URL: ").strip()
-            download_sound(link)
-        elif choice == "0":
+        opt = input("[?] Choose option: ").strip()
+        if opt == "1":
+            url = input("[?] Enter TikTok profile URL: ").strip()
+            download_profile_pic(url)
+        elif opt == "2":
+            url = input("[?] Enter TikTok video URL: ").strip()
+            download_video_nowm(url)
+        elif opt == "3":
+            url = input("[?] Enter TikTok video URL: ").strip()
+            download_thumbnail(url)
+        elif opt == "4":
+            url = input("[?] Enter TikTok video/sound URL: ").strip()
+            download_sound(url)
+        elif opt == "0":
             break
         else:
-            console.print("[red]Invalid option[/red]")
-        input("\n[press ENTER to continue]")
+            print("[red][×] Invalid option[/red]")
+        input("[Press ENTER to return to TikTok menu]")
 
 def main():
     while True:
-        clear()
         main_menu()
-        choice = input("\n[?] Enter choice: ").strip()
-        if choice == "1":
+        opt = input("[?] Choose option: ").strip()
+        if opt == "1":
             tiktok_handler()
-        elif choice == "0":
-            console.print("[cyan]Goodbye![/cyan]")
+        elif opt == "0":
+            clear()
             break
         else:
-            console.print("[red]Invalid option[/red]")
-            input("\n[press ENTER to continue]")
+            print("[red][×] Invalid option[/red]")
+            input("[Press ENTER]")
 
 if __name__ == "__main__":
     main()
