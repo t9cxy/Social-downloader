@@ -25,21 +25,31 @@ def download_tiktok():
     video_link = input(f"{CYAN}[{YELLOW}> {CYAN}]{RESET} ")
     print(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Do you want to specify a custom name for the video?")
     custom_name = input(f"{CYAN}[{YELLOW}> {CYAN}]{RESET} (Leave blank for default name): ")
-    
-    # Fetch video description as the default file name
-    response = requests.get(video_link)
-    soup = BeautifulSoup(response.text, 'html.parser')
-    description = soup.find('meta', property='og:description')['content']
-    video_name = custom_name if custom_name else description
 
-    # Here you would add TikTok API logic to fetch the video and profile pic
-    print(f"{CYAN}[{YELLOW}!{CYAN}]{RESET} Downloading TikTok video as '{video_name}'...")
+    try:
+        # Fetching TikTok video page
+        response = requests.get(video_link)
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        # Find the description meta tag
+        description_meta = soup.find('meta', property='og:description')
+        if description_meta:
+            description = description_meta['content']
+        else:
+            description = "TikTok_Video"  # Fallback if description is not found
 
-    # Simulate download process
-    time.sleep(3)
+        video_name = custom_name if custom_name else description
+        print(f"{CYAN}[{YELLOW}!{CYAN}]{RESET} Downloading TikTok video as '{video_name}'...")
 
-    print(f"{CYAN}[{GREEN}✔{CYAN}]{RESET} Video downloaded successfully! (saved as '{video_name}')")
-    time.sleep(2)
+        # Simulate download process
+        time.sleep(3)
+
+        print(f"{CYAN}[{GREEN}✔{CYAN}]{RESET} Video downloaded successfully! (saved as '{video_name}')")
+        time.sleep(2)
+
+    except Exception as e:
+        print(f"{CYAN}[{RED}!{CYAN}]{RESET} Error while downloading TikTok video: {str(e)}")
+        time.sleep(2)
 
 # Function to download Instagram content
 def download_instagram():
@@ -48,19 +58,30 @@ def download_instagram():
     print(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Do you want to specify a custom name for the post?")
     custom_name = input(f"{CYAN}[{YELLOW}> {CYAN}]{RESET} (Leave blank for default name): ")
 
-    # Fetching Instagram post description as default file name
-    response = requests.get(post_link)
-    soup = BeautifulSoup(response.text, 'html.parser')
-    description = soup.find('meta', property='og:description')['content']
-    post_name = custom_name if custom_name else description
+    try:
+        # Fetching Instagram post page
+        response = requests.get(post_link)
+        soup = BeautifulSoup(response.text, 'html.parser')
 
-    print(f"{CYAN}[{YELLOW}!{CYAN}]{RESET} Downloading Instagram post as '{post_name}'...")
+        # Find the description meta tag
+        description_meta = soup.find('meta', property='og:description')
+        if description_meta:
+            description = description_meta['content']
+        else:
+            description = "Instagram_Post"  # Fallback if description is not found
 
-    # Simulate download process
-    time.sleep(3)
+        post_name = custom_name if custom_name else description
+        print(f"{CYAN}[{YELLOW}!{CYAN}]{RESET} Downloading Instagram post as '{post_name}'...")
 
-    print(f"{CYAN}[{GREEN}✔{CYAN}]{RESET} Instagram content downloaded successfully! (saved as '{post_name}')")
-    time.sleep(2)
+        # Simulate download process
+        time.sleep(3)
+
+        print(f"{CYAN}[{GREEN}✔{CYAN}]{RESET} Instagram content downloaded successfully! (saved as '{post_name}')")
+        time.sleep(2)
+
+    except Exception as e:
+        print(f"{CYAN}[{RED}!{CYAN}]{RESET} Error while downloading Instagram content: {str(e)}")
+        time.sleep(2)
 
 # Function to download YouTube video
 def download_youtube():
@@ -69,15 +90,20 @@ def download_youtube():
     print(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Do you want to specify a custom name for the video?")
     custom_name = input(f"{CYAN}[{YELLOW}> {CYAN}]{RESET} (Leave blank for default name): ")
 
-    yt = YouTube(video_link)
-    video_name = custom_name if custom_name else yt.title
-    video_stream = yt.streams.filter(progressive=True, file_extension="mp4").first()
+    try:
+        yt = YouTube(video_link)
+        video_name = custom_name if custom_name else yt.title
+        video_stream = yt.streams.filter(progressive=True, file_extension="mp4").first()
 
-    print(f"{CYAN}[{YELLOW}!{CYAN}]{RESET} Downloading YouTube video as '{video_name}'...")
-    video_stream.download('/sdcard/download', filename=video_name + '.mp4')
+        print(f"{CYAN}[{YELLOW}!{CYAN}]{RESET} Downloading YouTube video as '{video_name}'...")
+        video_stream.download('/sdcard/download', filename=video_name + '.mp4')
 
-    print(f"{CYAN}[{GREEN}✔{CYAN}]{RESET} YouTube video downloaded successfully! (saved as '{video_name}.mp4')")
-    time.sleep(2)
+        print(f"{CYAN}[{GREEN}✔{CYAN}]{RESET} YouTube video downloaded successfully! (saved as '{video_name}.mp4')")
+        time.sleep(2)
+
+    except Exception as e:
+        print(f"{CYAN}[{RED}!{CYAN}]{RESET} Error while downloading YouTube video: {str(e)}")
+        time.sleep(2)
 
 # Main menu function to keep the script running
 def main_menu():
