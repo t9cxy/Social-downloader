@@ -1,106 +1,118 @@
-import os import time import random import string from pytube import YouTube import requests from bs4 import BeautifulSoup
+import os
+import time
+import random
+import string
+from pytube import YouTube
+import requests
+from bs4 import BeautifulSoup
 
-Terminal Colors
+# Terminal Colors
+RED = '\033[91m'
+GREEN = '\033[92m'
+CYAN = '\033[96m'
+YELLOW = '\033[93m'
+RESET = '\033[0m'
 
-RED = '\033[91m' GREEN = '\033[92m' CYAN = '\033[96m' YELLOW = '\033[93m' RESET = '\033[0m'
 
-def clear(): os.system('clear' if os.name != 'nt' else 'cls')
+def clear():
+    os.system('clear' if os.name != 'nt' else 'cls')
 
-def generate_random_name(length=8): return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
 
-def download_youtube(): clear() print(f"""{CYAN}
+def generate_random_name(length=8):
+    return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
+
+
+def download_youtube():
+    clear()
+    print(f"""{CYAN}
 
 YouTube Downloader
 
 {RESET}")
 
-url = input(f"{CYAN}[?]{RESET} Enter YouTube video URL: ")
-if not url:
-    print(f"{RED}[!] Invalid URL.{RESET}")
-    return
+    url = input(f"{CYAN}[?]{RESET} Enter YouTube video URL: ")
+    if not url:
+        print(f"{RED}[!] Invalid URL.{RESET}")
+        return
 
-try:
-    yt = YouTube(url)
-    title = yt.title.strip().split('|')[0].split('#')[0]
+    try:
+        yt = YouTube(url)
+        title = yt.title.strip().split('|')[0].split('#')[0]
 
-    print()
-    custom_name = input(f"{CYAN}[?]{RESET} Custom filename? (Leave blank for default): ").strip()
-    filename = custom_name if custom_name else title or generate_random_name()
-    filename = filename.replace(' ', '_')
+        custom_name = input(f"{CYAN}[?]{RESET} Custom filename? (Leave blank for default): ").strip()
+        filename = custom_name if custom_name else title or generate_random_name()
+        filename = filename.replace(' ', '_')
 
-    print()
-    print(f"{YELLOW}[~]{RESET} Downloading {filename}...")
-    stream = yt.streams.get_highest_resolution()
-    stream.download(output_path='/sdcard/download', filename=f"{filename}.mp4")
+        print(f"{YELLOW}[~]{RESET} Downloading {filename}...")
+        stream = yt.streams.get_highest_resolution()
+        stream.download(output_path='/sdcard/download', filename=f"{filename}.mp4")
 
-    print()
-    print(f"{GREEN}[✓]{RESET} Saved as /sdcard/download/{filename}.mp4")
+        print(f"{GREEN}[✓]{RESET} Saved as /sdcard/download/{filename}.mp4")
 
-except Exception as e:
-    print()
-    print(f"{RED}[!]{RESET} Error: {e}")
+    except Exception as e:
+        print(f"{RED}[!]{RESET} Error: {e}")
 
-time.sleep(3)
+    time.sleep(3)
 
-def download_tiktok(): clear() print(f"""{CYAN}
+
+def download_tiktok():
+    clear()
+    print(f"""{CYAN}
 
 TikTok Downloader
 
 {RESET}")
 
-url = input(f"{CYAN}[?]{RESET} Enter TikTok video URL: ")
-if not url:
-    print(f"{RED}[!] Invalid URL.{RESET}")
-    return
+    url = input(f"{CYAN}[?]{RESET} Enter TikTok video URL: ")
+    if not url:
+        print(f"{RED}[!] Invalid URL.{RESET}")
+        return
 
-try:
-    session = requests.Session()
-    r = session.get("https://snaptik.app")
-    soup = BeautifulSoup(r.text, 'html.parser')
-    token = soup.find('input', {'id': 'token'})['value']
+    try:
+        session = requests.Session()
+        r = session.get("https://snaptik.app")
+        soup = BeautifulSoup(r.text, 'html.parser')
+        token = soup.find('input', {'id': 'token'})['value']
 
-    payload = {'url': url, 'token': token}
-    headers = {'User-Agent': 'Mozilla/5.0'}
-    res = session.post("https://snaptik.app/abc2.php", data=payload, headers=headers)
-    links = BeautifulSoup(res.text, 'html.parser').find_all('a')
-    dl_url = next((a['href'] for a in links if 'http' in a['href']), None)
+        payload = {'url': url, 'token': token}
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        res = session.post("https://snaptik.app/abc2.php", data=payload, headers=headers)
+        links = BeautifulSoup(res.text, 'html.parser').find_all('a')
+        dl_url = next((a['href'] for a in links if 'http' in a['href']), None)
 
-    if not dl_url:
-        raise Exception("Failed to extract download link.")
+        if not dl_url:
+            raise Exception("Failed to extract download link.")
 
-    caption = generate_random_name()
+        caption = "tiktok_video"
+        filename = input(f"{CYAN}[?]{RESET} Custom filename? (Leave blank for default): ").strip()
+        filename = filename if filename else caption or generate_random_name()
+        filename = filename.replace(' ', '_')
 
-    print()
-    filename = input(f"{CYAN}[?]{RESET} Custom filename? (Leave blank for default): ").strip()
-    filename = filename if filename else caption
-    filename = filename.replace(' ', '_')
+        video_data = session.get(dl_url).content
+        with open(f"/sdcard/download/{filename}.mp4", "wb") as f:
+            f.write(video_data)
 
-    print()
-    print(f"{YELLOW}[~]{RESET} Downloading {filename}...")
-    video_data = session.get(dl_url).content
+        print(f"{GREEN}[✓]{RESET} Saved as /sdcard/download/{filename}.mp4")
 
-    with open(f"/sdcard/download/{filename}.mp4", "wb") as f:
-        f.write(video_data)
+    except Exception as e:
+        print(f"{RED}[!]{RESET} Error: {e}")
 
-    print()
-    print(f"{GREEN}[✓]{RESET} Saved as /sdcard/download/{filename}.mp4")
+    time.sleep(3)
 
-except Exception as e:
-    print()
-    print(f"{RED}[!]{RESET} Error: {e}")
 
-time.sleep(3)
+def main():
+    while True:
+        clear()
+        print(f"""{CYAN}
 
-def main(): while True: clear() print(f"""{CYAN}
+ █████╗ ██╗      ██████╗ ███╗   ██╗███████╗    
+██╔══██╗██║     ██╔═══██╗████╗  ██║██╔════╝    
+███████║██║     ██║   ██║██╔██╗ ██║█████╗      
+██╔══██║██║     ██║   ██║██║╚██╗██║██╔══╝      
+██║  ██║███████╗╚██████╔╝██║ ╚████║███████╗    
+╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚═╝  ╚═══╝╚══════╝    
 
-█████╗ ██╗      ██████╗ ███╗   ██╗███████╗
-██╔══██╗██║     ██╔═══██╗████╗  ██║██╔════╝
-███████║██║     ██║   ██║██╔██╗ ██║█████╗
-██╔══██║██║     ██║   ██║██║╚██╗██║██╔══╝
-██║  ██║███████╗╚██████╔╝██║ ╚████║███████╗
-╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚═╝  ╚═══╝╚══════╝
-
-{YELLOW}Developer: Alone | Telegram: @i4mAlone{RESET}
+       {YELLOW}Developer: Alone | Telegram: @i4mAlone{RESET}
 
 [1] TikTok Downloader
 
@@ -108,20 +120,22 @@ def main(): while True: clear() print(f"""{CYAN}
 
 [0] Exit
 
-""") choice = input(f"{CYAN}[?]{RESET} Choose an option: ") print()
+""")
+        choice = input(f"{CYAN}[?]{RESET} Choose an option: ")
 
-if choice == '1':
-        download_tiktok()
+        if choice == '1':
+            download_tiktok()
 
-    elif choice == '2':
-        download_youtube()
+        elif choice == '2':
+            download_youtube()
 
-    elif choice == '0':
-        break
+        elif choice == '0':
+            break
 
-    else:
-        print(f"{RED}[!] Invalid choice.{RESET}")
-        time.sleep(2)
+        else:
+            print(f"{RED}[!] Invalid choice.{RESET}")
+            time.sleep(2)
 
-if name == 'main': main()
 
+if __name__ == '__main__':
+    main()
