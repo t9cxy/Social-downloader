@@ -1,135 +1,92 @@
 import os
-import time
-import random
-import string
-from pytube import YouTube
-import requests
-from bs4 import BeautifulSoup
+import re
+import subprocess
+from rich.console import Console
+from rich.panel import Panel
 
-# Terminal Colors
-RED = '\033[91m'
-GREEN = '\033[92m'
-CYAN = '\033[96m'
-YELLOW = '\033[93m'
-RESET = '\033[0m'
+console = Console()
 
+def clear(): os.system("cls" if os.name == "nt" else "clear")
 
-def clear():
-    os.system('clear' if os.name != 'nt' else 'cls')
+def banner():
+    console.print(Panel.fit("[bold cyan]TIKTOK DOWNLOADER TOOL[/bold cyan]\n[green]by Alone[/green]"))
 
+def menu():
+    banner()
+    console.print("[bold yellow]Choose an option:[/bold yellow]")
+    console.print("[cyan]1.[/cyan] Download Profile Picture")
+    console.print("[cyan]2.[/cyan] Download Video")
+    console.print("[cyan]3.[/cyan] Download All Photos from Video")
+    console.print("[cyan]4.[/cyan] Download Sound from Video")
+    console.print("[cyan]5.[/cyan] Exit")
 
-def generate_random_name(length=8):
-    return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
+def get_video_id(url):
+    match = re.search(r'/video/(\d+)', url)
+    return match.group(1) if match else None
 
-
-def download_youtube():
-    clear()
-    print(f"""{CYAN}
-YouTube Downloader
-{RESET}""")
-    
-    url = input(f"{CYAN}[?]{RESET} Enter YouTube video URL: ")
-    if not url:
-        print(f"{RED}[!] Invalid URL.{RESET}")
+def download_profile_pic(link):
+    console.print("[blue]Fetching profile picture...[/blue]")
+    username = re.findall(r'tiktok\.com/@([a-zA-Z0-9_.]+)', link)
+    if not username:
+        console.print("[red]Invalid profile URL![/red]")
         return
-
     try:
-        yt = YouTube(url)
-        title = yt.title.strip().split('|')[0].split('#')[0]
-        
-        custom_name = input(f"{CYAN}[?]{RESET} Custom filename? (Leave blank for default): ").strip()
-        filename = custom_name if custom_name else title or generate_random_name()
-        filename = filename.replace(' ', '_')
-
-        print()
-        print(f"{YELLOW}[~]{RESET} Downloading {filename}...")
-        
-        stream = yt.streams.get_highest_resolution()
-        stream.download(output_path='/sdcard/download', filename=f"{filename}.mp4")
-
-        print(f"{GREEN}[✓]{RESET} Saved as /sdcard/download/{filename}.mp4")
-    
+        from TikTokApi import TikTokApi
+        api = TikTokApi()
+        user = api.user(username[0])
+        user_info = user.info()
+        avatar_url = user_info['user']['avatarLarger']
+        os.system(f"wget -O {username[0]}_profile.jpg \"{avatar_url}\"")
+        console.print(f"[green]Profile picture saved as {username[0]}_profile.jpg[/green]")
     except Exception as e:
-        print(f"{RED}[!]{RESET} Error: {e}")
-    
-    time.sleep(3)
+        console.print(f"[red]Error:[/red] {e}")
 
-
-def download_tiktok():
-    clear()
-    print(f"""{CYAN}
-TikTok Downloader
-{RESET}""")
-    
-    url = input(f"{CYAN}[?]{RESET} Enter TikTok video URL: ")
-    if not url:
-        print(f"{RED}[!] Invalid URL.{RESET}")
-        return
-
+def download_video(link):
+    console.print("[blue]Downloading video...[/blue]")
     try:
-        session = requests.Session()
-        r = session.get("https://snaptik.app")
-        soup = BeautifulSoup(r.text, 'html.parser')
-        token = soup.find('input', {'id': 'token'})['value']
-
-        payload = {'url': url, 'token': token}
-        headers = {'User-Agent': 'Mozilla/5.0'}
-
-        res = session.post("https://snaptik.app/abc2.php", data=payload, headers=headers)
-        links = BeautifulSoup(res.text, 'html.parser').find_all('a')
-        dl_url = next((a['href'] for a in links if 'http' in a['href']), None)
-
-        if not dl_url:
-            raise Exception("Failed to extract download link.")
-
-        filename = input(f"{CYAN}[?]{RESET} Custom filename? (Leave blank for random): ").strip()
-        filename = filename if filename else generate_random_name()
-        filename = filename.replace(' ', '_')
-
-        video_data = session.get(dl_url).content
-        with open(f"/sdcard/download/{filename}.mp4", "wb") as f:
-            f.write(video_data)
-
-        print()
-        print(f"{GREEN}[✓]{RESET} Saved as /sdcard/download/{filename}.mp4")
-    
+        subprocess.run(["yt-dlp", "-o", "%(title)s.%(ext)s", link])
     except Exception as e:
-        print(f"{RED}[!]{RESET} Error: {e}")
+        console.print(f"[red]Error:[/red] {e}")
 
-    time.sleep(3)
+def download_photos(link):
+    console.print("[blue]Extracting photos from video...[/blue]")
+    try:
+        subprocess.run(["yt-dlp", "--write-thumbnail", "--skip-download", "-o", "%(title)s.%(ext)s", link])
+        console.print("[green]Photos downloaded (thumbnail). Full photo extraction is limited by TikTok.[/green]")
+    except Exception as e:
+        console.print(f"[red]Error:[/red] {e}")
 
+def download_sound(link):
+    console.print("[blue]Downloading audio...[/blue]")
+    try:
+        subprocess.run(["yt-dlp", "-x", "--audio-format", "mp3", "-o", "%(title)s.%(ext)s", link])
+        console.print("[green]Sound downloaded as MP3.[/green]")
+    except Exception as e:
+        console.print(f"[red]Error:[/red] {e}")
 
 def main():
     while True:
         clear()
-        print(f"""{CYAN}
- █████╗ ██╗      ██████╗ ███╗   ██╗███████╗    
-██╔══██╗██║     ██╔═══██╗████╗  ██║██╔════╝    
-███████║██║     ██║   ██║██╔██╗ ██║█████╗      
-██╔══██║██║     ██║   ██║██║╚██╗██║██╔══╝      
-██║  ██║███████╗╚██████╔╝██║ ╚████║███████╗    
-╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚═╝  ╚═══╝╚══════╝    
-
-{YELLOW}Developer: Alone | Telegram: @i4mAlone{RESET}
-
-[1] TikTok Downloader
-
-[2] YouTube Downloader
-
-[0] Exit
-""")
-        choice = input(f"{CYAN}[?]{RESET} Choose an option: ")
-
-        if choice == '1':
-            download_tiktok()
-        elif choice == '2':
-            download_youtube()
-        elif choice == '0':
+        menu()
+        choice = input("\n[?] Enter choice: ").strip()
+        if choice == "1":
+            link = input("[?] Enter TikTok profile URL: ").strip()
+            download_profile_pic(link)
+        elif choice == "2":
+            link = input("[?] Enter TikTok video URL: ").strip()
+            download_video(link)
+        elif choice == "3":
+            link = input("[?] Enter TikTok video URL: ").strip()
+            download_photos(link)
+        elif choice == "4":
+            link = input("[?] Enter TikTok video or sound URL: ").strip()
+            download_sound(link)
+        elif choice == "5":
+            console.print("[cyan]Exiting...[/cyan]")
             break
         else:
-            print(f"{RED}[!] Invalid choice.{RESET}")
-            time.sleep(2)
+            console.print("[red]Invalid option[/red]")
+        input("\n[press ENTER to return to menu]")
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
