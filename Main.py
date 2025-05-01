@@ -1,4 +1,7 @@
-import os import requests import re from urllib.parse import urlparse
+import os
+import requests
+import re
+from urllib.parse import urlparse
 
 DOWNLOAD_DIR = "/sdcard/download"
 
