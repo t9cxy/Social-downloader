@@ -1,220 +1,142 @@
 import os
-import requests
-from colorama import Fore, Style, init
+import re
 import time
+import requests
+from bs4 import BeautifulSoup
+from pytube import YouTube
+from termcolor import colored
 
-# Initialize colorama
-init(autoreset=True)
+# Download directory
+DOWNLOAD_DIR = "/sdcard/download/"
+os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
-# Colors for output
-RED = Fore.RED
-GREEN = Fore.GREEN
-CYAN = Fore.CYAN
-YELLOW = Fore.YELLOW
-MAGENTA = Fore.MAGENTA
-BLUE = Fore.BLUE
-RESET = Style.RESET_ALL
-BOLD = Style.BRIGHT
+def clr(text, color="cyan"):
+    return colored(text, color)
 
-DOWNLOAD_DIR = "/sdcard/download"  # Directory to save files
+def banner():
+    print(clr(r""" 
+     ▄▄▄      ▓██   ██▓ ▒█████   ███▄ ▄███▓ ▓█████ 
+    ▒████▄     ▒██  ██▒▒██▒  ██▒▓██▒▀█▀ ██▒ ▓█   ▀ 
+    ▒██  ▀█▄    ▒██ ██░▒██░  ██▒▓██    ▓██░ ▒███   
+    ░██▄▄▄▄██   ░ ▐██▓░▒██   ██░▒██    ▒██  ▒▓█  ▄ 
+     ▓█   ▓██▒  ░ ██▒▓░░ ████▓▒░▒██▒   ░██▒ ░▒████▒
+     ▒▒   ▓▒█░   ██▒▒▒ ░ ▒░▒░▒░ ░ ▒░   ░  ░ ░░ ▒░ ░
+      ▒   ▒▒ ░ ▓██ ░▒░   ░ ▒ ▒░ ░  ░      ░  ░ ░  ░
+      ░   ▒    ▒ ▒ ░░  ░ ░ ░ ▒  ░      ░       ░   
+          ░  ░ ░ ░         ░ ░         ░       ░  ░
+                ░ ░                                  
+    """, "magenta"))
+    print(clr("[ • ] Tool by ALONE", "green"))
+    print(clr("[ • ] Telegram: @i4mAlone", "yellow"))
+    print(clr("[ • ] Date: " + time.strftime('%Y-%m-%d'), "blue"))
+    print()
 
-def clear():
-    os.system('clear')
-
-def logo():
-    print(f"""{CYAN}{BOLD}
-     █████  ██       ██████  ███    ██ ███████ 
-    ██   ██ ██      ██    ██ ████   ██ ██      
-    ███████ ██      ██    ██ ██ ██  ██ █████   
-    ██   ██ ██      ██    ██ ██  ██ ██ ██      
-    ██   ██ ███████  ██████  ██   ████ ███████ 
-    {RESET}""")
+def sanitize_filename(name):
+    return re.sub(r'[\\/*?:"<>|]', "", name)
 
 def download_file(url, filename):
-    print(f"{CYAN}[{YELLOW}•{CYAN}]{RESET} Downloading {filename}...")
     try:
-        r = requests.get(url, stream=True)
-        r.raise_for_status()
-        file_path = os.path.join(DOWNLOAD_DIR, filename)
-        with open(file_path, 'wb') as f:
-            for chunk in r.iter_content(chunk_size=8192):
+        response = requests.get(url, stream=True)
+        response.raise_for_status()
+        filepath = os.path.join(DOWNLOAD_DIR, filename)
+        with open(filepath, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=8192):
                 f.write(chunk)
-        print(f"{GREEN}[✓]{RESET} Saved as: {file_path}")
+        print(clr(f"[ ✔ ] Saved as {filepath}", "blue"))
     except Exception as e:
-        print(f"{RED}[×]{RESET} Error: {e}")
+        print(clr(f"[ × ] Error downloading file: {e}", "red"))
 
-def get_display_name(url):
-    # Simulate fetching the display name from the URL (replace with actual scraping logic or API call)
-    display_name = "Sample Display Name"  # Replace with actual display name fetching logic
-    return display_name
+def download_profile_picture():
+    url = input(clr("[ ? ] TikTok/YouTube video or profile URL: ", "yellow")).strip()
+    custom_name = input(clr("[ ? ] Custom filename (leave blank for default): ", "yellow")).strip()
+    try:
+        if "tiktok.com" in url:
+            match = re.search(r"@([\w\.]+)", url)
+            username = match.group(1) if match else None
+            if not username:
+                print(clr("[ × ] Cannot extract TikTok username.", "red"))
+                return
+            headers = {"User-Agent": "Mozilla/5.0"}
+            response = requests.get(f"https://www.tiktok.com/@{username}", headers=headers)
+            soup = BeautifulSoup(response.text, 'html.parser')
+            img_tag = soup.find("img", {"alt": f"{username}'s profile picture"})
+            img_url = img_tag['src'] if img_tag else None
+            display_name = username
+        elif "youtube.com" in url or "youtu.be" in url:
+            yt = YouTube(url)
+            display_name = yt.author or yt.channel_id
+            # Use YouTube API for actual profile pic, here it's fallback
+            img_url = yt.thumbnail_url
+        else:
+            print(clr("[ × ] Unsupported URL.", "red"))
+            return
+        if not img_url:
+            print(clr("[ × ] Profile picture not found.", "red"))
+            return
+        filename = sanitize_filename(custom_name if custom_name else display_name) + ".jpg"
+        download_file(img_url, filename)
+    except Exception as e:
+        print(clr(f"[ × ] Error: {e}", "red"))
 
-def get_filename_from_caption_or_display_name(url, default_name="video"):
-    # Simulate fetching caption from the URL (replace with actual caption fetching logic)
-    video_caption = "Sample Caption from Video"  # Replace with actual caption fetching logic
-    display_name = get_display_name(url)  # Get the display name
+def download_youtube_video():
+    url = input(clr("[ ? ] YouTube video URL: ", "yellow")).strip()
+    custom_name = input(clr("[ ? ] Custom filename (leave blank for default): ", "yellow")).strip()
+    try:
+        yt = YouTube(url)
+        title = sanitize_filename(yt.title)
+        filename = sanitize_filename(custom_name if custom_name else title) + ".mp4"
+        stream = yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first()
+        filepath = os.path.join(DOWNLOAD_DIR, filename)
+        stream.download(output_path=DOWNLOAD_DIR, filename=filename)
+        print(clr(f"[ ✔ ] Saved as {filepath}", "blue"))
+    except Exception as e:
+        print(clr(f"[ × ] Error: {e}", "red"))
 
-    # Use caption as filename if available, otherwise use the display name
-    filename = video_caption if video_caption else display_name
+def download_photo():
+    url = input(clr("[ ? ] Image URL: ", "yellow")).strip()
+    custom_name = input(clr("[ ? ] Custom filename (leave blank for default): ", "yellow")).strip()
+    try:
+        if not custom_name:
+            filename = "photo_" + time.strftime("%Y%m%d%H%M%S") + ".jpg"
+        else:
+            filename = sanitize_filename(custom_name) + ".jpg"
+        download_file(url, filename)
+    except Exception as e:
+        print(clr(f"[ × ] Error: {e}", "red"))
 
-    print(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Use this default filename: {filename}? (y/n): ", end="")
-    user_input = input().strip().lower()
+def download_sound():
+    url = input(clr("[ ? ] Sound URL: ", "yellow")).strip()
+    custom_name = input(clr("[ ? ] Custom filename (leave blank for default): ", "yellow")).strip()
+    try:
+        filename = sanitize_filename(custom_name if custom_name else "sound_" + time.strftime("%Y%m%d%H%M%S")) + ".mp3"
+        download_file(url, filename)
+    except Exception as e:
+        print(clr(f"[ × ] Error: {e}", "red"))
 
-    if user_input == 'n':
-        filename = input(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Enter a custom filename (without extension): ")
-    
-    return f"{filename}.mp4"  # Adjust the extension based on the file type (video, photo, etc.)
-
-def main_menu():
-    clear()
-    logo()
-    print(f"\n{MAGENTA}[ {YELLOW}MAIN MENU {MAGENTA}]{RESET}\n")
-    print(f"{CYAN}[01]{RESET} TikTok Downloader")
-    print(f"{CYAN}[02]{RESET} Instagram Downloader")
-    print(f"{CYAN}[03]{RESET} Snapchat Downloader")
-    print(f"{CYAN}[04]{RESET} Facebook Downloader")
-    print(f"{CYAN}[05]{RESET} Exit\n")
-
-    choice = input(f"{YELLOW}[{RED}•{YELLOW}] Select an option: {RESET}")
-    if choice == "1": tiktok_menu()
-    elif choice == "2": instagram_menu()
-    elif choice == "3": snapchat_menu()
-    elif choice == "4": facebook_menu()
-    elif choice == "5":
-        print(f"\n{GREEN}[✓]{RESET} Exiting...")
-        time.sleep(1)
-        exit()
-    else:
-        print(f"\n{RED}[×]{RESET} Invalid option!")
-        time.sleep(1)
-        main_menu()
-
-def tiktok_menu():
-    clear()
-    logo()
-    print(f"\n{MAGENTA}[ {BLUE}TIKTOK TOOLS {MAGENTA}]{RESET}\n")
-    print(f"{CYAN}[01]{RESET} Download Profile Picture")
-    print(f"{CYAN}[02]{RESET} Download Video")
-    print(f"{CYAN}[03]{RESET} Download Photo")
-    print(f"{CYAN}[04]{RESET} Download Sound")
-    print(f"{CYAN}[05]{RESET} Back\n")
-
-    opt = input(f"{YELLOW}[{RED}•{YELLOW}] Select an option: {RESET}")
-    if opt == "1":
-        url = input(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Enter profile pic URL: ")
-        filename = get_filename_from_caption_or_display_name(url, "tiktok_profile")
-        download_file(url, filename)
-    elif opt == "2":
-        url = input(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Enter video URL: ")
-        filename = get_filename_from_caption_or_display_name(url, "tiktok_video")
-        download_file(url, filename)
-    elif opt == "3":
-        url = input(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Enter photo URL: ")
-        filename = get_filename_from_caption_or_display_name(url, "tiktok_photo")
-        download_file(url, filename)
-    elif opt == "4":
-        url = input(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Enter sound URL: ")
-        filename = get_filename_from_caption_or_display_name(url, "tiktok_sound")
-        download_file(url, filename)
-    elif opt == "5":
-        main_menu()
-    else:
-        tiktok_menu()
-
-def instagram_menu():
-    clear()
-    logo()
-    print(f"\n{MAGENTA}[ {BLUE}INSTAGRAM TOOLS {MAGENTA}]{RESET}\n")
-    print(f"{CYAN}[01]{RESET} Download Profile Picture")
-    print(f"{CYAN}[02]{RESET} Download Video")
-    print(f"{CYAN}[03]{RESET} Download Photo")
-    print(f"{CYAN}[04]{RESET} Download Sound")
-    print(f"{CYAN}[05]{RESET} Back\n")
-
-    opt = input(f"{YELLOW}[{RED}•{YELLOW}] Select an option: {RESET}")
-    if opt == "1":
-        url = input(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Enter profile pic URL: ")
-        filename = get_filename_from_caption_or_display_name(url, "insta_profile")
-        download_file(url, filename)
-    elif opt == "2":
-        url = input(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Enter video URL: ")
-        filename = get_filename_from_caption_or_display_name(url, "insta_video")
-        download_file(url, filename)
-    elif opt == "3":
-        url = input(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Enter photo URL: ")
-        filename = get_filename_from_caption_or_display_name(url, "insta_photo")
-        download_file(url, filename)
-    elif opt == "4":
-        url = input(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Enter sound URL: ")
-        filename = get_filename_from_caption_or_display_name(url, "insta_sound")
-        download_file(url, filename)
-    elif opt == "5":
-        main_menu()
-    else:
-        instagram_menu()
-
-def snapchat_menu():
-    clear()
-    logo()
-    print(f"\n{MAGENTA}[ {BLUE}SNAPCHAT TOOLS {MAGENTA}]{RESET}\n")
-    print(f"{CYAN}[01]{RESET} Download Profile Picture")
-    print(f"{CYAN}[02]{RESET} Download Video")
-    print(f"{CYAN}[03]{RESET} Download Photo")
-    print(f"{CYAN}[04]{RESET} Download Sound")
-    print(f"{CYAN}[05]{RESET} Back\n")
-
-    opt = input(f"{YELLOW}[{RED}•{YELLOW}] Select an option: {RESET}")
-    if opt == "1":
-        url = input(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Enter profile pic URL: ")
-        filename = get_filename_from_caption_or_display_name(url, "snap_profile")
-        download_file(url, filename)
-    elif opt == "2":
-        url = input(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Enter video URL: ")
-        filename = get_filename_from_caption_or_display_name(url, "snap_video")
-        download_file(url, filename)
-    elif opt == "3":
-        url = input(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Enter photo URL: ")
-        filename = get_filename_from_caption_or_display_name(url, "snap_photo")
-        download_file(url, filename)
-    elif opt == "4":
-        url = input(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Enter sound URL: ")
-        filename = get_filename_from_caption_or_display_name(url, "snap_sound")
-        download_file(url, filename)
-    elif opt == "5":
-        main_menu()
-    else:
-        snapchat_menu()
-
-def facebook_menu():
-    clear()
-    logo()
-    print(f"\n{MAGENTA}[ {BLUE}FACEBOOK TOOLS {MAGENTA}]{RESET}\n")
-    print(f"{CYAN}[01]{RESET} Download Profile Picture")
-    print(f"{CYAN}[02]{RESET} Download Video")
-    print(f"{CYAN}[03]{RESET} Download Photo")
-    print(f"{CYAN}[04]{RESET} Download Sound")
-    print(f"{CYAN}[05]{RESET} Back\n")
-
-    opt = input(f"{YELLOW}[{RED}•{YELLOW}] Select an option: {RESET}")
-    if opt == "1":
-        url = input(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Enter profile pic URL: ")
-        filename = get_filename_from_caption_or_display_name(url, "fb_profile")
-        download_file(url, filename)
-    elif opt == "2":
-        url = input(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Enter video URL: ")
-        filename = get_filename_from_caption_or_display_name(url, "fb_video")
-        download_file(url, filename)
-    elif opt == "3":
-        url = input(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Enter photo URL: ")
-        filename = get_filename_from_caption_or_display_name(url, "fb_photo")
-        download_file(url, filename)
-    elif opt == "4":
-        url = input(f"{CYAN}[{YELLOW}?{CYAN}]{RESET} Enter sound URL: ")
-        filename = get_filename_from_caption_or_display_name(url, "fb_sound")
-        download_file(url, filename)
-    elif opt == "5":
-        main_menu()
-    else:
-        facebook_menu()
+def menu():
+    while True:
+        os.system("clear")
+        banner()
+        print(clr("1. Download Profile Picture", "cyan"))
+        print(clr("2. Download YouTube Video", "cyan"))
+        print(clr("3. Download Photo", "cyan"))
+        print(clr("4. Download Sound", "cyan"))
+        print(clr("0. Exit", "red"))
+        choice = input(clr("\n[ ? ] Choose an option: ", "yellow")).strip()
+        if choice == "1":
+            download_profile_picture()
+        elif choice == "2":
+            download_youtube_video()
+        elif choice == "3":
+            download_photo()
+        elif choice == "4":
+            download_sound()
+        elif choice == "0":
+            print(clr("\n[ ✔ ] Exiting... Have a good day!", "green"))
+            break
+        else:
+            print(clr("[ × ] Invalid choice!", "red"))
+        input(clr("\n[ • ] Press Enter to return to menu...", "magenta"))
 
 if __name__ == "__main__":
-    main_menu()
+    menu()
